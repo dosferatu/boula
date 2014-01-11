@@ -1,0 +1,148 @@
+\documentclass[a4paper]{report}   % list options between brackets
+
+% list packages between braces
+\usepackage{titlesec}             % http://ctan.org/pkg/titlesec 
+
+% For changing the table of content entries in to hyperlinks
+%\usepackage[linktoc=all]{hyperref}
+%\hypersetup{colorlinks=true, linkcolor=blue}
+
+% type user-defined commands here
+\renewcommand{\thesection}{}% Remove section references...
+\renewcommand{\thesubsection}{\arabic{subsection}}%... from subsections
+
+\begin{document}
+\raggedright{}  % Don't allow text to be spread to the right margin
+
+\title{PCIe to OCP Bridge \\
+  Project Development Plan
+}   % type title between braces
+
+\author{Kevin Bedrossian \\
+  Peter Depeche \\        % type author(s) between braces
+  Benjamin Hunstman \\
+  Michael Walton
+}
+
+\date{January 10, 2014}    % type date between braces
+\maketitle
+
+\begin{abstract}
+  PCI Express (PCIe) was created in 2004 and became into wide spread use soon after that due to the great benefits over PCI\@.
+  It allows for increased bandwidth and flexibility that could not be achieved before\@.
+  Revisions of the PCIe protocol continue to be developed giving increased bandwidth and functionality to the already robust communications bus\@.
+  Open Core Protocol (OCP) is an openly licensed, core-centric protocol intended to meet system level integration challenges\@.
+  It is an independent bus interface for on-chip systems for communications\@.
+  These two protocols will be used to develop a System On Chip (SOC) that will allow for direct communication of the PCIe bus with a Virtual File System (VFS) supporting all memory transactions\@.
+  This is to be accomplished by an IP block that will transparently bridge these two standards. The target device will be a Xilinx Spartan-6.
+\end{abstract}
+
+\tableofcontents
+
+\chapter{Introduction}
+A PCIe to OCP bridge IP block will be implemented to allow communication between a VFS\@.
+The design will be validated by performing Direct Memory Access (DMA) communication with an EMMC memory device connected to the FPGA platform.
+
+\chapter{Design Plan}
+The following is the project plan that will be used in developing the bridge using a Hardware Design Language (HDL) such as Verilog and System Verilog.
+\linebreak
+
+\subsection{Design}
+\begin{itemize}
+  \item{Pseudo-code of core and test bench}
+  \item{Write HDL/Verilog for simulation that is technology independent}
+  \item{Analyze for functionality}
+  \item{Revise HDL/Verilog design}
+\end{itemize}
+
+\subsection{Optimization}
+\begin{itemize}
+  \item{Map HDL to Xilinx Vertex 6 logic circuits and functional blocks}
+  \item{Optimize for technology dependence}
+    \begin{itemize}
+      \item{Prepare for synthesis}
+    \end{itemize}
+  \item{Timing Analysis}
+    \begin{itemize}
+      \item{Check for speed, setup, and hold time}
+      \item{Form constraints}
+    \end{itemize}
+  \item{Revise HDL}
+\end{itemize}
+
+\subsection{Place \& Route}
+\begin{itemize}
+  \item{Map (place) netlist to FPGA}
+  \item{Route the structures (cores) on the FPGA to interconnect and perform the desired function}
+  \item{Timing Analysis}
+    \begin{itemize}
+      \item{Apply further constraints if needed}
+      \item{Move blocks around on the FPGA using a floor planning tool if needed to help timing}
+    \end{itemize}
+  \item{Revise HDL}
+\end{itemize}
+
+\subsection{Validation}
+\begin{itemize}
+  \item{Check design functionality}
+  \item{Check if design meets performance goals}
+\end{itemize}
+
+\chapter{Test Plan}
+This is a rough draft of the actual test bench that will be used to verify the bridge at each step of the design process.
+\linebreak
+
+\subsection{Design}
+\begin{itemize}
+  \item{TBD --- Unit tests for design will be included in the design process}
+\end{itemize}
+
+\subsection{Optimization}
+\begin{itemize}
+    \item{TBD --- Validation for timing requirements and functionality after changes mandated by synthesis requirements have been implemented}
+\end{itemize}
+\subsection{Place \& Route}
+\begin{itemize}
+  \item{TBD --- Validation for timing requirements using new analysis results and test for functionality after implementing hardware specific changes}
+\end{itemize}
+\subsection{Verification}
+\begin{itemize}
+  \item{Test 1}
+    \begin{itemize}
+      \item{Successful read of a single word from flash}
+      \item{Successful write of a single word to flash}
+    \end{itemize}
+  \item{Test 2}
+    \begin{itemize}
+      \item{Successful read of a burst from flash}
+      \item{Successful write of a burst to flash}
+    \end{itemize}
+  \item{Test 3}
+    \begin{itemize}
+      \item{Successful completion of ongoing DMA communications with flash}
+    \end{itemize}
+\end{itemize}
+
+\chapter{Questions}
+The following is a list of questions that need to be answered to help facilitate the project in moving forward:
+\linebreak
+
+\begin{enumerate}
+  \item{Can we get the FPGA board now?}
+    \begin{enumerate}
+      \item{Needed to test out the PCIe Core Gen from Xilinx to ensure a complete understanding of what we are working with}
+    \end{enumerate}
+  \item{What exactly is provided for us in the system and has it been tested?}
+    \begin{enumerate}
+      \item{PCIe Core Gen}
+      \item{EMMC}
+    \end{enumerate}
+  \item{What version of PCIe are we to target (1.0, 2.0, etc)?}
+  \item{Is there someone that can guide us or provide us with some direction or suggestions?}
+\end{enumerate}
+
+%\begin{thebibliography}{9}
+  % type bibliography here
+%\end{thebibliography}
+
+\end{document}
