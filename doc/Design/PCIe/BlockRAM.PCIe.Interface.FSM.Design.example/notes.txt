@@ -1,5 +1,0 @@
-BlockRAM.PCIe.Interface.FSM.1.vsd was done in Vision 2010
-
-Then, after realization that Visio 2010 did not comply with UML standards for
-drawing FSM diagram, I used Vision 2013 to create file BlockRAM.PCIe.Interface.FSM.2.vsdx
-

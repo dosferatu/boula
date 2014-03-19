@@ -1,3 +1,0 @@
-xapp859.Endpoint.Interface.To.User.Block.and.DMA.example.pdf: 
-page 8 contains nice diagram of PCIe to Bridge interface and how DMA fits into all this.
-Shows PCIe's signals that go to DMA on Bridge's side.
