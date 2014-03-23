@@ -1,0 +1,3 @@
+`define MDATA_WIDTH 8
+`define SDATA_WIDTH 8
+`define MADDR_WIDTH 64
