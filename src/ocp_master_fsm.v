@@ -4,16 +4,38 @@
  * For now no extensions; just simple R/W FSM
  */
 
-`include const.vh
+/*
+* DESIGN NOTES
+* request group valid when we are not in IDLE state
+* response group valid whenever SResp != Null
+* datahandshake group valid whenever MDataValid == 1
+*
+* accept signals only valid for group when that group is valid
+*
+* request phase ends when SCmdAccept gets sampled as high
+* response phase ends whenever MRespAccept gets sampled as high
+* ***IF MRespAccept NOT CONFIGURED THEN ASSUMED TO BE 1 AND RESPONSE PHASE IS
+* 1 CYCLE LONG
+*
+* datahandshake phase ends when SDataAccept is sampled as high
+*/
 
-//add enableclk in
+//`include "const.vh"
+`define MDATA_WIDTH 8
+`define SDATA_WIDTH 8
+`define MADDR_WIDTH 64
+
 module ocp_master_fsm(
-  input wire                      address,
-  input wire [`MDATA_WIDTH - 1:0] data,
+  // Bridge interface/*{{{*/
+  input wire [`MADDR_WIDTH - 1:0] address,
   input wire                      data_valid,
-  input wire [`MADDR_WIDTH - 1:0] reset,
   input wire                      read_request,
+  input wire                      reset,
+  input wire [`MDATA_WIDTH - 1:0] write_data,   // Coming from PCIe side
   input wire                      write_request,
+
+  output reg [`MDATA_WIDTH - 1:0] read_data,    // Coming from OCP bus
+  /*}}}*/
 
   // OCP 3.0 interface/*{{{*/
   input wire                      Clk,
@@ -26,44 +48,76 @@ module ocp_master_fsm(
   output reg [`MADDR_WIDTH - 1:0] MAddr,
   output reg [2:0]                MCmd,
   output reg [`MDATA_WIDTH - 1:0] MData,
-  output reg                      MDataValid/*}}}*/
+  output reg                      MDataValid
+  /*}}}*/
 );
 
+// Declarations/*{{{*/
+
+// MCmd states
 parameter IDLE  = 3'b000;
-parameter WRITE = 3'b001;
-parameter READ  = 3'b010;
-parameter WAITR = 3'b100;
+parameter WR    = 3'b001;
+parameter RD    = 3'b010;
+parameter RDEX  = 3'b011;
+parameter RDL   = 3'b100;
+parameter WRNP  = 3'b101;
+parameter WRC   = 3'b110;
+parameter BCST  = 3'b111;
+
+// SResp states
+parameter NULL  = 2'b00;
+parameter DVA   = 2'b00;
+parameter FAIL  = 2'b00;
+parameter ERR   = 2'b00;
 
 reg [3:0] state;
 reg [3:0] next;
+/*}}}*/
 
-assign MData = reset;
+// Combinational logic/*{{{*/
+//assign MData = write_data;
+/*}}}*/
 
-// State transition block
-always @(posedge clock) begin
-  if (reset) begin
-    state <= 4'b0;
-    state[IDLE] <= 1'b1;
+// State transition logic/*{{{*/
+always @(posedge Clk) begin
+  if (EnableClk) begin
+    if (reset) begin
+      state <= 4'b0;
+      state[IDLE] <= 1'b1;
+    end
+
+    else begin
+      state <= next;
+    end
   end
 
   else begin
-    state <= next;
+    state <= state;
   end
 end
+/*}}}*/
 
-// State transision logic block
-always @(state or read_request or write_request or SCmdAccept or SResp) begin
+// Next state logic/*{{{*/
+always @(state or read_request or write_request or SCmdAccept) begin
   next <= 4'b0;
 
+
+  // Handle read or write requests/*{{{*/
   case (1'b1)
-    // Handle read or write request
+    /*
+     * Handle read or write request
+     *
+     * This is the request phase. This means that all signals
+     * included in this group that we are using must be active
+     * during this phase.
+     */
     state[IDLE]: begin
       if (read_request) begin
-        next[READ] <= 1'b1;
+        next[RD] <= 1'b1;
       end
 
       else if (write_request) begin
-        next[WRITE] <= 1'b1;
+        next[WR] <= 1'b1;
       end
 
       else begin
@@ -71,62 +125,25 @@ always @(state or read_request or write_request or SCmdAccept or SResp) begin
       end
     end
 
-    // WRITE state just waits for SCmdAccept to be set
-    state[WRITE]: begin
+    // Wait for SCmdAccept to be set
+    state[WR]: begin
       if (SCmdAccept) begin
         next[IDLE] <= 1'b1;
       end
 
       else begin
-        next[WRITE] <= 1'b1;
+        next[WR] <= 1'b1;
       end
     end
 
-    // READ state requires a sequence to finish
-    state[READ]: begin
-      if (~SCmdAccept) begin
-        next[READ] <= 1'b1;
-      end
-
-      // RUNNING ON ASSUMPTION WE CAN IGNORE SRESP FOR THIS TRANSITION
-      // WE MAY NEED TO ENTER CASE FOR IF SRESP IS ALREADY 01 TO JUMP TO IDLE
-      else begin
-        next[WAITR] <= 1'b1;
-      end
-    end
-
-    state[WAITR]: begin
+    // Wait for SCmdAccept to be set
+    state[RD]: begin
       if (SCmdAccept) begin
-        case (SResp)
-          // No response
-          2'b00: begin
-            next[WAITR] = 1'b1;
-          end
-
-          // Data valid / accept
-          2'b01: begin
-            next[IDLE] = 1'b1;
-          end
-
-          // Request failed
-          2'b10: begin
-            next[IDLE] = 1'b1;
-          end
-
-          // Response error
-          2'b11: begin
-            next[IDLE] = 1'b1;
-          end
-
-          default: begin
-            next[WAITR] = 1'b1;
-          end
+        next[IDLE] <= 1'b1;
       end
 
-      // This should not get reached
-      // Look at how we can remove this from RTL
       else begin
-        next[WAITR] <= 1'b1;
+        next[RD] <= 1'b1;
       end
     end
 
@@ -134,38 +151,83 @@ always @(state or read_request or write_request or SCmdAccept or SResp) begin
       next[IDLE] <= 1'b1;
     end
   endcase
+/*}}}*/
 end
+/*}}}*/
 
-// Output logic block
-always @(posedge clock) begin
+// Output logic/*{{{*/
+always @(posedge Clk) begin
   if (reset) begin
+    MAddr <= `MADDR_WIDTH'bx;
     MCmd <= 3'b0;
+    MData <= `MDATA_WIDTH'bx;
+    MDataValid <= 1'b0;
+    read_data <= `MDATA_WIDTH'bx;
   end
 
   else begin
     MCmd <= 3'b0;
-
+    
+    // Handle Master outputs/*{{{*/
     case (1'b1)
       next[IDLE]: begin
+        MAddr <= `MADDR_WIDTH'bx;
         MCmd <= IDLE;
+        MData <= `MDATA_WIDTH'bx;
+        MDataValid <= 1'b0;
       end
 
-      next[WRITE]: begin
-        MCmd <= WRITE;
+      next[WR]: begin
+        MAddr <= address;
+        MCmd <= WR;
+        MData <= write_data;
+        MDataValid <= 1'b1;
       end
 
-      next[READ]: begin
-        MCmd <= READ;
+      next[RD]: begin
+        MAddr <= address;
+        MCmd <= RD;
+        MData <= `MDATA_WIDTH'bx;
+        MDataValid <= 1'b0;
+        end
+
+        default: begin
+          MAddr <= `MADDR_WIDTH'bx;
+          MCmd <= IDLE;
+          MData <= `MDATA_WIDTH'bx;
+          MDataValid <= 1'b0;
+        end
+      endcase
+/*}}}*/
+
+    // Handle slave response/*{{{*/
+    case (SResp)
+      // No response
+      NULL: begin
+        read_data <= `MDATA_WIDTH'bx;
       end
 
-      next[WAITR]: begin
-        MCmd <= WAITR;
+      // Data valid / accept
+      DVA: begin
+        read_data <= SData;
+      end
+
+      // Request failed
+      FAIL: begin
+        read_data <= SData;
+      end
+
+      // Response error
+      ERR: begin
+        read_data <= `MDATA_WIDTH'bx;
       end
 
       default: begin
-        MCmd <= IDLE;
+        read_data <= `MDATA_WIDTH'bx;
       end
     endcase
+    /*}}}*/
+    end
   end
-end
-endmodule
+  /*}}}*/
+  endmodule
