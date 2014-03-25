@@ -397,14 +397,14 @@ always @(posedge Clk) begin
     case (1'b1)
       next[IDLE]: begin
         // Basic group
-        MAddr             <= {`addr_wdth{1'bx}};
+        MAddr             <= {`addr_wdth{1'b0}};
         MCmd              <= IDLE;
-        MData             <= {`data_wdth{1'bx}};
+        MData             <= {`data_wdth{1'b0}};
         MDataValid        <= 1'bx;
         MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace        <= {`addr_wdth{1'b1}};
+        MAddrSpace        <= {`addr_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -469,7 +469,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace        <= {`addr_wdth{1'b1}};
+        MAddrSpace        <= {`addr_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -529,12 +529,12 @@ always @(posedge Clk) begin
         // Basic group
         MAddr             <= address;
         MCmd              <= RD;
-        MData             <= {`data_wdth{1'bx}};
+        MData             <= {`data_wdth{1'b0}};
         MDataValid        <= 1'bx;
         MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace        <= {`addr_wdth{1'b1}};
+        MAddrSpace        <= {`addr_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -592,14 +592,14 @@ always @(posedge Clk) begin
 
       default: begin
         // Basic group
-        MAddr             <= {`addr_wdth{1'bx}};
+        MAddr             <= {`addr_wdth{1'b0}};
         MCmd              <= IDLE;
-        MData             <= {`data_wdth{1'bx}};
+        MData             <= {`data_wdth{1'b0}};
         MDataValid        <= 1'bx;
         MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace        <= {`addr_wdth{1'b1}};
+        MAddrSpace        <= {`addr_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
