@@ -30,7 +30,7 @@
 `define data_wdth 8
 
 // Simple group
-`define addrspace_wdth 64
+//`define addrspace_wdth 0
 `define mdatainfo_wdth 0
 `define reqinfo_wdth 0
 `define respinfo_wdth 0
@@ -43,20 +43,20 @@
 `define blockstride_wdth 8
 
 // Tag group
-`define tags 0
+//`define tags 0
 
 // Thread group
-`define connid_width 0
-`define threads 0
+//`define connid_width 0
+//`define threads 0
 
 // Sideband group
-`define control_wdth 0
-`define mflag_wdth 0
-`define sflag_wdth 0
+//`define control_wdth 0
+//`define mflag_wdth 0
+//`define sflag_wdth 0
 
 // Test group
-`define scanctrl_wdth 0
-`define scanport_wdth 0
+//`define scanctrl_wdth 0
+//`define scanport_wdth 0
 /*}}}*/
 
 module ocp_master_fsm(
@@ -90,7 +90,7 @@ module ocp_master_fsm(
   input wire [1:0]                      SResp,
 
   // Simple group
-  output reg [`addr_wdth - 1:0]         MAddrSpace,
+  //output reg [`addrspace_wdth - 1:0]    MAddrSpace,
   output reg [`data_wdth - 1:0]         MByteEn,
   output reg [`data_wdth - 1:0]         MDataByteEn,
   output reg [`mdatainfo_wdth - 1:0]    MDataInfo,
@@ -111,54 +111,54 @@ module ocp_master_fsm(
   output reg                            MReqLast,
   output reg                            MReqRowLast,
   input wire                            SRespLast,
-  input wire                            SRespRowLast,
+  input wire                            SRespRowLast
 
   // Tag group
-  output reg [`tags - 1:0]              MDataTagID,
-  output reg [`tags - 1:0]              MTagID,
-  output reg                            MTagInOrder,
-  input wire [`tags - 1:0]              STagID,
-  input wire                            STagInOrder,
+  //output reg [`tags - 1:0]              MDataTagID,
+  //output reg [`tags - 1:0]              MTagID,
+  //output reg                            MTagInOrder,
+  //input wire [`tags - 1:0]              STagID,
+  //input wire                            STagInOrder,
   
   // Thread group
-  output reg [`connid_width - 1:0]      MConnID,
-  output reg [`threads - 1:0]           MDataThreadID,
-  output reg [`threads - 1:0]           MThreadBusy,
-  output reg [`threads - 1:0]           MThreadID,
-  input wire [`threads - 1:0]           SDataThreadBusy,
-  input wire [`threads - 1:0]           SThreadBusy,
-  input wire [`threads - 1:0]           SThreadID,
+  //output reg [`connid_width - 1:0]      MConnID,
+  //output reg [`threads - 1:0]           MDataThreadID,
+  //output reg [`threads - 1:0]           MThreadBusy,
+  //output reg [`threads - 1:0]           MThreadID,
+  //input wire [`threads - 1:0]           SDataThreadBusy,
+  //input wire [`threads - 1:0]           SThreadBusy,
+  //input wire [`threads - 1:0]           SThreadID,
   
   // Sideband group
-  output reg                            ConnectCap,
-  output reg [`control_wdth - 1:0]      Control,
-  output reg                            ControlBusy,
-  output reg [1:0]                      ControlWr,
-  output reg [1:0]                      MConnect,
-  output reg                            MError,
-  output reg [`mflag_wdth - 1:0]        MFlag,
-  output reg                            MReset_n,
-  input wire                            SConnect,
-  input wire                            SError,
-  input wire [`threads - 1:0]           SFlag,
-  input wire                            SInterrupt,
-  input wire                            SReset_n,
-  output reg [`threads - 1:0]           Status,
-  output reg                            StatusBusy,
-  output reg                            StatusRd,
-  input wire                            SWait,
+  //output reg                            ConnectCap,
+  //output reg [`control_wdth - 1:0]      Control,
+  //output reg                            ControlBusy,
+  //output reg [1:0]                      ControlWr,
+  //output reg [1:0]                      MConnect,
+  //output reg                            MError,
+  //output reg [`mflag_wdth - 1:0]        MFlag,
+  //output reg                            MReset_n,
+  //input wire                            SConnect,
+  //input wire                            SError,
+  //input wire [`threads - 1:0]           SFlag,
+  //input wire                            SInterrupt,
+  //input wire                            SReset_n,
+  //output reg [`threads - 1:0]           Status,
+  //output reg                            StatusBusy,
+  //output reg                            StatusRd,
+  //input wire                            SWait,
   
   // Test group
-  output reg                            ClkByp,
-  output reg [`scanctrl_wdth - 1:0]     Scanctrl,
-  output reg [`scanport_wdth - 1:0]     Scanin,
-  output reg [`scanport_wdth - 1:0]     Scanout,
-  output reg                            TCK,
-  output reg                            TDI,
-  output reg                            TDO,
-  output reg                            TestClk,
-  output reg                            TMS,
-  output reg                            TRST_N
+  //output reg                            ClkByp,
+  //output reg [`scanctrl_wdth - 1:0]     Scanctrl,
+  //output reg [`scanport_wdth - 1:0]     Scanin,
+  //output reg [`scanport_wdth - 1:0]     Scanout,
+  //output reg                            TCK,
+  //output reg                            TDI,
+  //output reg                            TDO,
+  //output reg                            TestClk,
+  //output reg                            TMS,
+  //output reg                            TRST_N
   /*}}}*/
 );
 
@@ -193,26 +193,26 @@ parameter UNKN  = 3'b110;   // Unknown
 parameter BLCK  = 3'b111;   // 2-dimensional Block
 
 // MConnect encoding (master connection state)
-parameter M_OFF   = 2'b00;  // Not connected
-parameter M_WAIT  = 2'b01;  // Matches prior state
-parameter M_DISC  = 2'b10;  // Not connected
-parameter M_CON   = 2'b11;  // Connected
+//parameter M_OFF   = 2'b00;  // Not connected
+//parameter M_WAIT  = 2'b01;  // Matches prior state
+//parameter M_DISC  = 2'b10;  // Not connected
+//parameter M_CON   = 2'b11;  // Connected
 
 // SConnect encoding (slave connection vote)
-parameter S_DISC  = 1'b0;   // Vote to disconnect
-parameter S_CON   = 1'b1;   // Vote to connect
+//parameter S_DISC  = 1'b0;   // Vote to disconnect
+//parameter S_CON   = 1'b1;   // Vote to connect
 
 // SWait encoding (slave connection change delay)
-parameter S_OK    = 1'b0;   // Allow connection status change
-parameter S_WAIT  = 1'b0;   // Delay connection status change
+//parameter S_OK    = 1'b0;   // Allow connection status change
+//parameter S_WAIT  = 1'b0;   // Delay connection status change
 
 // MReset_n signal
-parameter MRESET_ACTIVE   = 1'b0;
-parameter MRESET_INACTIVE = 1'b1;
+//parameter MRESET_ACTIVE   = 1'b0;
+//parameter MRESET_INACTIVE = 1'b1;
 
 // SReset_n signal
-parameter SRESET_ACTIVE   = 1'b0;
-parameter SRESET_INACTIVE = 1'b1;
+//parameter SRESET_ACTIVE   = 1'b0;
+//parameter SRESET_INACTIVE = 1'b1;
 /*}}}*/
 
 reg [2:0] state;
@@ -334,7 +334,7 @@ always @(posedge Clk) begin
     MRespAccept       <= 1'b1;
 
     // Simple group
-    MAddrSpace        <= {`addr_wdth{1'b1}};
+    //MAddrSpace        <= {`addrspace_wdth{1'b1}};
     MByteEn           <= {`data_wdth{1'b1}};
     MDataByteEn       <= {`data_wdth{1'b1}};
     MDataInfo         <= 1'b0;
@@ -354,40 +354,40 @@ always @(posedge Clk) begin
     MReqRowLast       <= 1'bx;
     
     // Tag group
-    MDataTagID        <= 1'b0;
-    MTagID            <= 1'b0;
-    MTagInOrder       <= 1'b0;
+    //MDataTagID        <= 1'b0;
+    //MTagID            <= 1'b0;
+    //MTagInOrder       <= 1'b0;
     
     // Thread group
-    MConnID           <= 1'b0;
-    MDataThreadID     <= 1'b0;
-    MThreadBusy       <= 1'b0;
-    MThreadID         <= 1'b0;
+    //MConnID           <= 1'b0;
+    //MDataThreadID     <= 1'b0;
+    //MThreadBusy       <= 1'b0;
+    //MThreadID         <= 1'b0;
     
     // Sideband group
-    ConnectCap        <= 1'bx;
-    Control           <= 1'b0;
-    ControlBusy       <= 1'b0;
-    ControlWr         <= 1'bx;
-    MConnect          <= M_CON;
-    MError            <= 1'b0;
-    MFlag             <= 1'b0;
-    MReset_n          <= 1'b1;
-    Status            <= 1'b0;
-    StatusBusy        <= 1'b0;
-    StatusRd          <= 1'bx;
+    //ConnectCap        <= 1'bx;
+    //Control           <= 1'b0;
+    //ControlBusy       <= 1'b0;
+    //ControlWr         <= 1'bx;
+    //MConnect          <= M_CON;
+    //MError            <= 1'b0;
+    //MFlag             <= 1'b0;
+    //MReset_n          <= 1'b1;
+    //Status            <= 1'b0;
+    //StatusBusy        <= 1'b0;
+    //StatusRd          <= 1'bx;
     
     // Test group
-    ClkByp            <= 1'bx;
-    Scanctrl          <= 1'bx;
-    Scanin            <= 1'bx;
-    Scanout           <= 1'bx;
-    TCK               <= 1'bx;
-    TDI               <= 1'bx;
-    TDO               <= 1'bx;
-    TestClk           <= 1'bx;
-    TMS               <= 1'bx;
-    TRST_N            <= 1'bx;
+    //ClkByp            <= 1'bx;
+    //Scanctrl          <= 1'bx;
+    //Scanin            <= 1'bx;
+    //Scanout           <= 1'bx;
+    //TCK               <= 1'bx;
+    //TDI               <= 1'bx;
+    //TDO               <= 1'bx;
+    //TestClk           <= 1'bx;
+    //TMS               <= 1'bx;
+    //TRST_N            <= 1'bx;
   end
 
   else begin
@@ -404,7 +404,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace        <= {`addr_wdth{1'b0}};
+        //MAddrSpace        <= {`addrspace_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -424,40 +424,40 @@ always @(posedge Clk) begin
         MReqRowLast       <= 1'bx;
 
         // Tag group
-        MDataTagID        <= 1'b0;
-        MTagID            <= 1'b0;
-        MTagInOrder       <= 1'b0;
+        //MDataTagID        <= 1'b0;
+        //MTagID            <= 1'b0;
+        //MTagInOrder       <= 1'b0;
 
         // Thread group
-        MConnID           <= 1'b0;
-        MDataThreadID     <= 1'b0;
-        MThreadBusy       <= 1'b0;
-        MThreadID         <= 1'b0;
+        //MConnID           <= 1'b0;
+        //MDataThreadID     <= 1'b0;
+        //MThreadBusy       <= 1'b0;
+        //MThreadID         <= 1'b0;
 
         // Sideband group
-        ConnectCap        <= 1'bx;
-        Control           <= 1'b0;
-        ControlBusy       <= 1'b0;
-        ControlWr         <= 1'bx;
-        MConnect          <= M_CON;
-        MError            <= 1'b0;
-        MFlag             <= 1'b0;
-        MReset_n          <= 1'b1;
-        Status            <= 1'b0;
-        StatusBusy        <= 1'b0;
-        StatusRd          <= 1'bx;
+        //ConnectCap        <= 1'bx;
+        //Control           <= 1'b0;
+        //ControlBusy       <= 1'b0;
+        //ControlWr         <= 1'bx;
+        //MConnect          <= M_CON;
+        //MError            <= 1'b0;
+        //MFlag             <= 1'b0;
+        //MReset_n          <= 1'b1;
+        //Status            <= 1'b0;
+        //StatusBusy        <= 1'b0;
+        //StatusRd          <= 1'bx;
 
         // Test group
-        ClkByp            <= 1'bx;
-        Scanctrl          <= 1'bx;
-        Scanin            <= 1'bx;
-        Scanout           <= 1'bx;
-        TCK               <= 1'bx;
-        TDI               <= 1'bx;
-        TDO               <= 1'bx;
-        TestClk           <= 1'bx;
-        TMS               <= 1'bx;
-        TRST_N            <= 1'bx;
+        //ClkByp            <= 1'bx;
+        //Scanctrl          <= 1'bx;
+        //Scanin            <= 1'bx;
+        //Scanout           <= 1'bx;
+        //TCK               <= 1'bx;
+        //TDI               <= 1'bx;
+        //TDO               <= 1'bx;
+        //TestClk           <= 1'bx;
+        //TMS               <= 1'bx;
+        //TRST_N            <= 1'bx;
       end
 
       next[WR]: begin
@@ -469,7 +469,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace        <= {`addr_wdth{1'b0}};
+        //MAddrSpace        <= {`addrspace_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -489,40 +489,40 @@ always @(posedge Clk) begin
         MReqRowLast       <= 1'bx;
 
         // Tag group
-        MDataTagID        <= 1'b0;
-        MTagID            <= 1'b0;
-        MTagInOrder       <= 1'b0;
+        //MDataTagID        <= 1'b0;
+        //MTagID            <= 1'b0;
+        //MTagInOrder       <= 1'b0;
 
         // Thread group
-        MConnID           <= 1'b0;
-        MDataThreadID     <= 1'b0;
-        MThreadBusy       <= 1'b0;
-        MThreadID         <= 1'b0;
+        //MConnID           <= 1'b0;
+        //MDataThreadID     <= 1'b0;
+        //MThreadBusy       <= 1'b0;
+        //MThreadID         <= 1'b0;
 
         // Sideband group
-        ConnectCap        <= 1'bx;
-        Control           <= 1'b0;
-        ControlBusy       <= 1'b0;
-        ControlWr         <= 1'bx;
-        MConnect          <= M_CON;
-        MError            <= 1'b0;
-        MFlag             <= 1'b0;
-        MReset_n          <= 1'b1;
-        Status            <= 1'b0;
-        StatusBusy        <= 1'b0;
-        StatusRd          <= 1'bx;
+        //ConnectCap        <= 1'bx;
+        //Control           <= 1'b0;
+        //ControlBusy       <= 1'b0;
+        //ControlWr         <= 1'bx;
+        //MConnect          <= M_CON;
+        //MError            <= 1'b0;
+        //MFlag             <= 1'b0;
+        //MReset_n          <= 1'b1;
+        //Status            <= 1'b0;
+        //StatusBusy        <= 1'b0;
+        //StatusRd          <= 1'bx;
 
         // Test group
-        ClkByp            <= 1'bx;
-        Scanctrl          <= 1'bx;
-        Scanin            <= 1'bx;
-        Scanout           <= 1'bx;
-        TCK               <= 1'bx;
-        TDI               <= 1'bx;
-        TDO               <= 1'bx;
-        TestClk           <= 1'bx;
-        TMS               <= 1'bx;
-        TRST_N            <= 1'bx;
+        //ClkByp            <= 1'bx;
+        //Scanctrl          <= 1'bx;
+        //Scanin            <= 1'bx;
+        //Scanout           <= 1'bx;
+        //TCK               <= 1'bx;
+        //TDI               <= 1'bx;
+        //TDO               <= 1'bx;
+        //TestClk           <= 1'bx;
+        //TMS               <= 1'bx;
+        //TRST_N            <= 1'bx;
       end
 
       next[RD]: begin
@@ -534,7 +534,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace        <= {`addr_wdth{1'b0}};
+        //MAddrSpace        <= {`addrspace_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -554,40 +554,40 @@ always @(posedge Clk) begin
         MReqRowLast       <= 1'bx;
 
         // Tag group
-        MDataTagID        <= 1'b0;
-        MTagID            <= 1'b0;
-        MTagInOrder       <= 1'b0;
+        //MDataTagID        <= 1'b0;
+        //MTagID            <= 1'b0;
+        //MTagInOrder       <= 1'b0;
 
         // Thread group
-        MConnID           <= 1'b0;
-        MDataThreadID     <= 1'b0;
-        MThreadBusy       <= 1'b0;
-        MThreadID         <= 1'b0;
+        //MConnID           <= 1'b0;
+        //MDataThreadID     <= 1'b0;
+        //MThreadBusy       <= 1'b0;
+        //MThreadID         <= 1'b0;
 
         // Sideband group
-        ConnectCap        <= 1'bx;
-        Control           <= 1'b0;
-        ControlBusy       <= 1'b0;
-        ControlWr         <= 1'bx;
-        MConnect          <= M_CON;
-        MError            <= 1'b0;
-        MFlag             <= 1'b0;
-        MReset_n          <= 1'b1;
-        Status            <= 1'b0;
-        StatusBusy        <= 1'b0;
-        StatusRd          <= 1'bx;
+        //ConnectCap        <= 1'bx;
+        //Control           <= 1'b0;
+        //ControlBusy       <= 1'b0;
+        //ControlWr         <= 1'bx;
+        //MConnect          <= M_CON;
+        //MError            <= 1'b0;
+        //MFlag             <= 1'b0;
+        //MReset_n          <= 1'b1;
+        //Status            <= 1'b0;
+        //StatusBusy        <= 1'b0;
+        //StatusRd          <= 1'bx;
 
         // Test group
-        ClkByp            <= 1'bx;
-        Scanctrl          <= 1'bx;
-        Scanin            <= 1'bx;
-        Scanout           <= 1'bx;
-        TCK               <= 1'bx;
-        TDI               <= 1'bx;
-        TDO               <= 1'bx;
-        TestClk           <= 1'bx;
-        TMS               <= 1'bx;
-        TRST_N            <= 1'bx;
+        //ClkByp            <= 1'bx;
+        //Scanctrl          <= 1'bx;
+        //Scanin            <= 1'bx;
+        //Scanout           <= 1'bx;
+        //TCK               <= 1'bx;
+        //TDI               <= 1'bx;
+        //TDO               <= 1'bx;
+        //TestClk           <= 1'bx;
+        //TMS               <= 1'bx;
+        //TRST_N            <= 1'bx;
       end
 
       default: begin
@@ -599,7 +599,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace        <= {`addr_wdth{1'b0}};
+        //MAddrSpace        <= {`addrspace_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -619,40 +619,40 @@ always @(posedge Clk) begin
         MReqRowLast       <= 1'bx;
 
         // Tag group
-        MDataTagID        <= 1'b0;
-        MTagID            <= 1'b0;
-        MTagInOrder       <= 1'b0;
+        //MDataTagID        <= 1'b0;
+        //MTagID            <= 1'b0;
+        //MTagInOrder       <= 1'b0;
 
         // Thread group
-        MConnID           <= 1'b0;
-        MDataThreadID     <= 1'b0;
-        MThreadBusy       <= 1'b0;
-        MThreadID         <= 1'b0;
+        //MConnID           <= 1'b0;
+        //MDataThreadID     <= 1'b0;
+        //MThreadBusy       <= 1'b0;
+        //MThreadID         <= 1'b0;
 
         // Sideband group
-        ConnectCap        <= 1'bx;
-        Control           <= 1'b0;
-        ControlBusy       <= 1'b0;
-        ControlWr         <= 1'bx;
-        MConnect          <= M_CON;
-        MError            <= 1'b0;
-        MFlag             <= 1'b0;
-        MReset_n          <= 1'b1;
-        Status            <= 1'b0;
-        StatusBusy        <= 1'b0;
-        StatusRd          <= 1'bx;
+        //ConnectCap        <= 1'bx;
+        //Control           <= 1'b0;
+        //ControlBusy       <= 1'b0;
+        //ControlWr         <= 1'bx;
+        //MConnect          <= M_CON;
+        //MError            <= 1'b0;
+        //MFlag             <= 1'b0;
+        //MReset_n          <= 1'b1;
+        //Status            <= 1'b0;
+        //StatusBusy        <= 1'b0;
+        //StatusRd          <= 1'bx;
 
         // Test group
-        ClkByp            <= 1'bx;
-        Scanctrl          <= 1'bx;
-        Scanin            <= 1'bx;
-        Scanout           <= 1'bx;
-        TCK               <= 1'bx;
-        TDI               <= 1'bx;
-        TDO               <= 1'bx;
-        TestClk           <= 1'bx;
-        TMS               <= 1'bx;
-        TRST_N            <= 1'bx;
+        //ClkByp            <= 1'bx;
+        //Scanctrl          <= 1'bx;
+        //Scanin            <= 1'bx;
+        //Scanout           <= 1'bx;
+        //TCK               <= 1'bx;
+        //TDI               <= 1'bx;
+        //TDO               <= 1'bx;
+        //TestClk           <= 1'bx;
+        //TMS               <= 1'bx;
+        //TRST_N            <= 1'bx;
       end
     endcase
     /*}}}*/
