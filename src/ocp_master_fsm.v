@@ -21,6 +21,9 @@
 *
 * Tie off values can be found in reset logic section of the output FSM block
 */ 
+`include "counter.v"
+
+// OCP 3.0 interface/*{{{*/
 
 // Basic group
 `define addr_wdth 64
@@ -54,10 +57,13 @@
 // Test group
 `define scanctrl_wdth 0
 `define scanport_wdth 0
+/*}}}*/
 
 module ocp_master_fsm(
   // Bridge interface/*{{{*/
   input wire [`addr_wdth - 1:0]         address,
+  input wire                            burst_mode,
+  input wire [9:0]                      burst_length,
   input wire                            data_valid,
   input wire                            read_request,
   input wire                            reset,
@@ -66,6 +72,7 @@ module ocp_master_fsm(
 
   output reg [`data_wdth - 1:0]         read_data,    // Coming from OCP bus
   /*}}}*/
+
 
   // OCP 3.0 interface/*{{{*/
   
@@ -320,16 +327,67 @@ end
 always @(posedge Clk) begin
   if (reset) begin
     // Basic group
-    MAddr <= {`addr_wdth{1'bx}};
-    MCmd <= IDLE;
-    MData <= {`data_wdth{1'bx}};
+    MAddr             <= {`addr_wdth{1'bx}};
+    MCmd              <= IDLE;
+    MData             <= {`data_wdth{1'bx}};
+    MDataValid        <= 1'bx;
+    MRespAccept       <= 1'b1;
 
     // Simple group
-    MAddrSpace <= {`addr_wdth{1'b1}};
-    MByteEn <= {`data_wdth{1'b1}};
-    MDataByteEn <= {`data_wdth{1'b1}};
-    MDataInfo <= 1'b0;
-    MReqInfo <= 0;
+    MAddrSpace        <= {`addr_wdth{1'b1}};
+    MByteEn           <= {`data_wdth{1'b1}};
+    MDataByteEn       <= {`data_wdth{1'b1}};
+    MDataInfo         <= 1'b0;
+    MReqInfo          <= 1'b0;
+
+    // Burst group
+    MAtomicLength     <= 1'b1;
+    MBlockHeight      <= 1'b1;
+    MBlockStride      <= 1'b0;
+    MBurstLength      <= 1'b1;
+    MBurstPrecise     <= 1'b1;
+    MBurstSeq         <= INCR;
+    MBurstSingleSeq   <= 1'b0;
+    MDataLast         <= 1'bx;
+    MDataRowLast      <= 1'bx;
+    MReqLast          <= 1'bx;
+    MReqRowLast       <= 1'bx;
+    
+    // Tag group
+    MDataTagID        <= 1'b0;
+    MTagID            <= 1'b0;
+    MTagInOrder       <= 1'b0;
+    
+    // Thread group
+    MConnID           <= 1'b0;
+    MDataThreadID     <= 1'b0;
+    MThreadBusy       <= 1'b0;
+    MThreadID         <= 1'b0;
+    
+    // Sideband group
+    ConnectCap        <= 1'bx;
+    Control           <= 1'b0;
+    ControlBusy       <= 1'b0;
+    ControlWr         <= 1'bx;
+    MConnect          <= M_CON;
+    MError            <= 1'b0;
+    MFlag             <= 1'b0;
+    MReset_n          <= 1'b1;
+    Status            <= 1'b0;
+    StatusBusy        <= 1'b0;
+    StatusRd          <= 1'bx;
+    
+    // Test group
+    ClkByp            <= 1'bx;
+    Scanctrl          <= 1'bx;
+    Scanin            <= 1'bx;
+    Scanout           <= 1'bx;
+    TCK               <= 1'bx;
+    TDI               <= 1'bx;
+    TDO               <= 1'bx;
+    TestClk           <= 1'bx;
+    TMS               <= 1'bx;
+    TRST_N            <= 1'bx;
   end
 
   else begin
@@ -339,58 +397,262 @@ always @(posedge Clk) begin
     case (1'b1)
       next[IDLE]: begin
         // Basic group
-        MAddr <= {`addr_wdth{1'bx}};
-        MCmd <= IDLE;
-        MData <= {`data_wdth{1'bx}};
+        MAddr             <= {`addr_wdth{1'bx}};
+        MCmd              <= IDLE;
+        MData             <= {`data_wdth{1'bx}};
+        MDataValid        <= 1'bx;
+        MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace <= {`addr_wdth{1'b1}};
-        MByteEn <= {`data_wdth{1'b1}};
-        MDataByteEn <= {`data_wdth{1'b1}};
-        MDataInfo <= 1'b0;
-        MReqInfo <= 0;
+        MAddrSpace        <= {`addr_wdth{1'b1}};
+        MByteEn           <= {`data_wdth{1'b1}};
+        MDataByteEn       <= {`data_wdth{1'b1}};
+        MDataInfo         <= 1'b0;
+        MReqInfo          <= 1'b0;
+
+        // Burst group
+        MAtomicLength     <= 1'b1;
+        MBlockHeight      <= 1'b1;
+        MBlockStride      <= 1'b0;
+        MBurstLength      <= 1'b1;
+        MBurstPrecise     <= 1'b1;
+        MBurstSeq         <= INCR;
+        MBurstSingleSeq   <= 1'b0;
+        MDataLast         <= 1'bx;
+        MDataRowLast      <= 1'bx;
+        MReqLast          <= 1'bx;
+        MReqRowLast       <= 1'bx;
+
+        // Tag group
+        MDataTagID        <= 1'b0;
+        MTagID            <= 1'b0;
+        MTagInOrder       <= 1'b0;
+
+        // Thread group
+        MConnID           <= 1'b0;
+        MDataThreadID     <= 1'b0;
+        MThreadBusy       <= 1'b0;
+        MThreadID         <= 1'b0;
+
+        // Sideband group
+        ConnectCap        <= 1'bx;
+        Control           <= 1'b0;
+        ControlBusy       <= 1'b0;
+        ControlWr         <= 1'bx;
+        MConnect          <= M_CON;
+        MError            <= 1'b0;
+        MFlag             <= 1'b0;
+        MReset_n          <= 1'b1;
+        Status            <= 1'b0;
+        StatusBusy        <= 1'b0;
+        StatusRd          <= 1'bx;
+
+        // Test group
+        ClkByp            <= 1'bx;
+        Scanctrl          <= 1'bx;
+        Scanin            <= 1'bx;
+        Scanout           <= 1'bx;
+        TCK               <= 1'bx;
+        TDI               <= 1'bx;
+        TDO               <= 1'bx;
+        TestClk           <= 1'bx;
+        TMS               <= 1'bx;
+        TRST_N            <= 1'bx;
       end
 
       next[WR]: begin
         // Basic group
-        MAddr <= address;
-        MCmd <= WR;
-        MData <= write_data;
+        MAddr             <= address;
+        MCmd              <= WR;
+        MData             <= write_data;
+        MDataValid        <= 1'bx;
+        MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace <= {`addr_wdth{1'b1}};
-        MByteEn <= {`data_wdth{1'b1}};
-        MDataByteEn <= {`data_wdth{1'b1}};
-        MDataInfo <= 1'b0;
-        MReqInfo <= 0;
+        MAddrSpace        <= {`addr_wdth{1'b1}};
+        MByteEn           <= {`data_wdth{1'b1}};
+        MDataByteEn       <= {`data_wdth{1'b1}};
+        MDataInfo         <= 1'b0;
+        MReqInfo          <= 1'b0;
+
+        // Burst group
+        MAtomicLength     <= 1'b1;
+        MBlockHeight      <= 1'b1;
+        MBlockStride      <= 1'b0;
+        MBurstLength      <= 1'b1;
+        MBurstPrecise     <= 1'b1;
+        MBurstSeq         <= INCR;
+        MBurstSingleSeq   <= 1'b0;
+        MDataLast         <= 1'bx;
+        MDataRowLast      <= 1'bx;
+        MReqLast          <= 1'bx;
+        MReqRowLast       <= 1'bx;
+
+        // Tag group
+        MDataTagID        <= 1'b0;
+        MTagID            <= 1'b0;
+        MTagInOrder       <= 1'b0;
+
+        // Thread group
+        MConnID           <= 1'b0;
+        MDataThreadID     <= 1'b0;
+        MThreadBusy       <= 1'b0;
+        MThreadID         <= 1'b0;
+
+        // Sideband group
+        ConnectCap        <= 1'bx;
+        Control           <= 1'b0;
+        ControlBusy       <= 1'b0;
+        ControlWr         <= 1'bx;
+        MConnect          <= M_CON;
+        MError            <= 1'b0;
+        MFlag             <= 1'b0;
+        MReset_n          <= 1'b1;
+        Status            <= 1'b0;
+        StatusBusy        <= 1'b0;
+        StatusRd          <= 1'bx;
+
+        // Test group
+        ClkByp            <= 1'bx;
+        Scanctrl          <= 1'bx;
+        Scanin            <= 1'bx;
+        Scanout           <= 1'bx;
+        TCK               <= 1'bx;
+        TDI               <= 1'bx;
+        TDO               <= 1'bx;
+        TestClk           <= 1'bx;
+        TMS               <= 1'bx;
+        TRST_N            <= 1'bx;
       end
 
       next[RD]: begin
         // Basic group
-        MAddr <= address;
-        MCmd <= RD;
-        MData <= {`data_wdth{1'bx}};
+        MAddr             <= address;
+        MCmd              <= RD;
+        MData             <= {`data_wdth{1'bx}};
+        MDataValid        <= 1'bx;
+        MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace <= {`addr_wdth{1'b1}};
-        MByteEn <= {`data_wdth{1'b1}};
-        MDataByteEn <= {`data_wdth{1'b1}};
-        MDataInfo <= 1'b0;
-        MReqInfo <= 0;
+        MAddrSpace        <= {`addr_wdth{1'b1}};
+        MByteEn           <= {`data_wdth{1'b1}};
+        MDataByteEn       <= {`data_wdth{1'b1}};
+        MDataInfo         <= 1'b0;
+        MReqInfo          <= 1'b0;
+
+        // Burst group
+        MAtomicLength     <= 1'b1;
+        MBlockHeight      <= 1'b1;
+        MBlockStride      <= 1'b0;
+        MBurstLength      <= 1'b1;
+        MBurstPrecise     <= 1'b1;
+        MBurstSeq         <= INCR;
+        MBurstSingleSeq   <= 1'b0;
+        MDataLast         <= 1'bx;
+        MDataRowLast      <= 1'bx;
+        MReqLast          <= 1'bx;
+        MReqRowLast       <= 1'bx;
+
+        // Tag group
+        MDataTagID        <= 1'b0;
+        MTagID            <= 1'b0;
+        MTagInOrder       <= 1'b0;
+
+        // Thread group
+        MConnID           <= 1'b0;
+        MDataThreadID     <= 1'b0;
+        MThreadBusy       <= 1'b0;
+        MThreadID         <= 1'b0;
+
+        // Sideband group
+        ConnectCap        <= 1'bx;
+        Control           <= 1'b0;
+        ControlBusy       <= 1'b0;
+        ControlWr         <= 1'bx;
+        MConnect          <= M_CON;
+        MError            <= 1'b0;
+        MFlag             <= 1'b0;
+        MReset_n          <= 1'b1;
+        Status            <= 1'b0;
+        StatusBusy        <= 1'b0;
+        StatusRd          <= 1'bx;
+
+        // Test group
+        ClkByp            <= 1'bx;
+        Scanctrl          <= 1'bx;
+        Scanin            <= 1'bx;
+        Scanout           <= 1'bx;
+        TCK               <= 1'bx;
+        TDI               <= 1'bx;
+        TDO               <= 1'bx;
+        TestClk           <= 1'bx;
+        TMS               <= 1'bx;
+        TRST_N            <= 1'bx;
       end
 
       default: begin
         // Basic group
-        MAddr <= {`addr_wdth{1'bx}};
-        MCmd <= IDLE;
-        MData <= {`data_wdth{1'bx}};
+        MAddr             <= {`addr_wdth{1'bx}};
+        MCmd              <= IDLE;
+        MData             <= {`data_wdth{1'bx}};
+        MDataValid        <= 1'bx;
+        MRespAccept       <= 1'b1;
 
         // Simple group
-        MAddrSpace <= {`addr_wdth{1'b1}};
-        MByteEn <= {`data_wdth{1'b1}};
-        MDataByteEn <= {`data_wdth{1'b1}};
-        MDataInfo <= 1'b0;
-        MReqInfo <= 0;
+        MAddrSpace        <= {`addr_wdth{1'b1}};
+        MByteEn           <= {`data_wdth{1'b1}};
+        MDataByteEn       <= {`data_wdth{1'b1}};
+        MDataInfo         <= 1'b0;
+        MReqInfo          <= 1'b0;
+
+        // Burst group
+        MAtomicLength     <= 1'b1;
+        MBlockHeight      <= 1'b1;
+        MBlockStride      <= 1'b0;
+        MBurstLength      <= 1'b1;
+        MBurstPrecise     <= 1'b1;
+        MBurstSeq         <= INCR;
+        MBurstSingleSeq   <= 1'b0;
+        MDataLast         <= 1'bx;
+        MDataRowLast      <= 1'bx;
+        MReqLast          <= 1'bx;
+        MReqRowLast       <= 1'bx;
+
+        // Tag group
+        MDataTagID        <= 1'b0;
+        MTagID            <= 1'b0;
+        MTagInOrder       <= 1'b0;
+
+        // Thread group
+        MConnID           <= 1'b0;
+        MDataThreadID     <= 1'b0;
+        MThreadBusy       <= 1'b0;
+        MThreadID         <= 1'b0;
+
+        // Sideband group
+        ConnectCap        <= 1'bx;
+        Control           <= 1'b0;
+        ControlBusy       <= 1'b0;
+        ControlWr         <= 1'bx;
+        MConnect          <= M_CON;
+        MError            <= 1'b0;
+        MFlag             <= 1'b0;
+        MReset_n          <= 1'b1;
+        Status            <= 1'b0;
+        StatusBusy        <= 1'b0;
+        StatusRd          <= 1'bx;
+
+        // Test group
+        ClkByp            <= 1'bx;
+        Scanctrl          <= 1'bx;
+        Scanin            <= 1'bx;
+        Scanout           <= 1'bx;
+        TCK               <= 1'bx;
+        TDI               <= 1'bx;
+        TDO               <= 1'bx;
+        TestClk           <= 1'bx;
+        TMS               <= 1'bx;
+        TRST_N            <= 1'bx;
       end
     endcase
     /*}}}*/
