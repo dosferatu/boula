@@ -97,7 +97,7 @@ module ocp_master_fsm(
   output reg [`blockstride_wdth - 1:0]  MBlockStride,
   output reg [`burstlength_wdth - 1:0]  MBurstLength,
   output reg                            MBurstPrecise,
-  output reg                            MBurstSeq,
+  output reg [2:0]                      MBurstSeq,
   output reg                            MBurstSingleSeq,
   output reg                            MDataLast,
   output reg                            MDataRowLast,
@@ -126,7 +126,7 @@ module ocp_master_fsm(
   output reg                            ConnectCap,
   output reg [`control_wdth - 1:0]      Control,
   output reg                            ControlBusy,
-  output reg                            ControlWr,
+  output reg [1:0]                      ControlWr,
   output reg [1:0]                      MConnect,
   output reg                            MError,
   output reg [`mflag_wdth - 1:0]        MFlag,
@@ -157,7 +157,9 @@ module ocp_master_fsm(
 
 // Declarations/*{{{*/
 
-// MCmd states
+// OCP 3.0 Encodings/*{{{*/
+
+// MCmd encoding
 parameter IDLE  = 3'b000;
 parameter WR    = 3'b001;
 parameter RD    = 3'b010;
@@ -167,11 +169,44 @@ parameter WRNP  = 3'b101;
 parameter WRC   = 3'b110;
 parameter BCST  = 3'b111;
 
-// SResp states
+// SResp encoding
 parameter NULL  = 2'b00;
 parameter DVA   = 2'b01;
 parameter FAIL  = 2'b10;
 parameter ERR   = 2'b11;
+
+// MBurstSeq encoding
+parameter INCR  = 3'b000;   // Incrementing
+parameter DFLT1 = 3'b001;   // Custom (packed)
+parameter WRAP  = 3'b010;   // Wrapping
+parameter DFLT2 = 3'b011;   // Custom (not packed)
+parameter XOR   = 3'b100;   // Exclusive OR
+parameter STRM  = 3'b101;   // Streaming
+parameter UNKN  = 3'b110;   // Unknown
+parameter BLCK  = 3'b111;   // 2-dimensional Block
+
+// MConnect encoding (master connection state)
+parameter M_OFF   = 2'b00;  // Not connected
+parameter M_WAIT  = 2'b01;  // Matches prior state
+parameter M_DISC  = 2'b10;  // Not connected
+parameter M_CON   = 2'b11;  // Connected
+
+// SConnect encoding (slave connection vote)
+parameter S_DISC  = 1'b0;   // Vote to disconnect
+parameter S_CON   = 1'b1;   // Vote to connect
+
+// SWait encoding (slave connection change delay)
+parameter S_OK    = 1'b0;   // Allow connection status change
+parameter S_WAIT  = 1'b0;   // Delay connection status change
+
+// MReset_n signal
+parameter MRESET_ACTIVE   = 1'b0;
+parameter MRESET_INACTIVE = 1'b1;
+
+// SReset_n signal
+parameter SRESET_ACTIVE   = 1'b0;
+parameter SRESET_INACTIVE = 1'b1;
+/*}}}*/
 
 reg [2:0] state;
 reg [2:0] next;
