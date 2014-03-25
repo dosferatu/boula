@@ -18,36 +18,140 @@
 * 1 CYCLE LONG
 *
 * datahandshake phase ends when SDataAccept is sampled as high
+*
+* Tie off values can be found in reset logic section of the output FSM block
 */ 
-//`include "const.vh"
-`define MDATA_WIDTH 8
-`define SDATA_WIDTH 8
-`define MADDR_WIDTH 64
+
+// Basic group
+`define addr_wdth 64
+`define data_wdth 8
+
+// Simple group
+`define addrspace_wdth 64
+`define mdatainfo_wdth 0
+`define reqinfo_wdth 0
+`define respinfo_wdth 0
+`define sdatainfo_wdth 0
+
+// Burst group
+`define atomiclength_wdth 0
+`define burstlength_wdth 8
+`define blockheight_wdth 8
+`define blockstride_wdth 8
+
+// Tag group
+`define tags 0
+
+// Thread group
+`define connid_width 0
+`define threads 0
+
+// Sideband group
+`define control_wdth 0
+`define mflag_wdth 0
+`define sflag_wdth 0
+
+// Test group
+`define scanctrl_wdth 0
+`define scanport_wdth 0
 
 module ocp_master_fsm(
   // Bridge interface/*{{{*/
-  input wire [`MADDR_WIDTH - 1:0] address,
-  //input wire                      data_valid,
-  input wire                      read_request,
-  input wire                      reset,
-  input wire [`MDATA_WIDTH - 1:0] write_data,   // Coming from PCIe side
-  input wire                      write_request,
+  input wire [`addr_wdth - 1:0]         address,
+  input wire                            data_valid,
+  input wire                            read_request,
+  input wire                            reset,
+  input wire [`data_wdth - 1:0]         write_data,   // Coming from PCIe side
+  input wire                            write_request,
 
-  output reg [`SDATA_WIDTH - 1:0] read_data,    // Coming from OCP bus
+  output reg [`data_wdth - 1:0]         read_data,    // Coming from OCP bus
   /*}}}*/
 
   // OCP 3.0 interface/*{{{*/
-  input wire                      Clk,
-  input wire                      EnableClk,
-  input wire                      SCmdAccept,
-  input wire [`SDATA_WIDTH - 1:0] SData,
-  //input wire                      SDataAccept,
-  input wire [1:0]                SResp,
+  
+  // Basic group
+  input wire                            Clk,
+  input wire                            EnableClk,
+  output reg [`addr_wdth - 1:0]         MAddr,
+  output reg [2:0]                      MCmd,
+  output reg [`data_wdth - 1:0]         MData,
+  output reg                            MDataValid,
+  output reg                            MRespAccept,
+  input wire                            SCmdAccept,
+  input wire [`data_wdth - 1:0]         SData,
+  input wire                            SDataAccept,
+  input wire [1:0]                      SResp,
 
-  output reg [`MADDR_WIDTH - 1:0] MAddr,
-  output reg [2:0]                MCmd,
-  output reg [`MDATA_WIDTH - 1:0] MData
-  //output reg                      MDataValid
+  // Simple group
+  output reg [`addr_wdth - 1:0]         MAddrSpace,
+  output reg [`data_wdth - 1:0]         MByteEn,
+  output reg [`data_wdth - 1:0]         MDataByteEn,
+  output reg [`mdatainfo_wdth - 1:0]    MDataInfo,
+  output reg [`reqinfo_wdth - 1:0]      MReqInfo,
+  input wire [`sdatainfo_wdth - 1:0]    SDataInfo,
+  input wire [`respinfo_wdth - 1:0]     SRespInfo,
+
+  // Burst group
+  output reg [`atomiclength_wdth - 1:0] MAtomicLength,
+  output reg [`blockheight_wdth - 1:0]  MBlockHeight,
+  output reg [`blockstride_wdth - 1:0]  MBlockStride,
+  output reg [`burstlength_wdth - 1:0]  MBurstLength,
+  output reg                            MBurstPrecise,
+  output reg                            MBurstSeq,
+  output reg                            MBurstSingleSeq,
+  output reg                            MDataLast,
+  output reg                            MDataRowLast,
+  output reg                            MReqLast,
+  output reg                            MReqRowLast,
+  input wire                            SRespLast,
+  input wire                            SRespRowLast,
+
+  // Tag group
+  output reg [`tags - 1:0]              MDataTagID,
+  output reg [`tags - 1:0]              MTagID,
+  output reg                            MTagInOrder,
+  input wire [`tags - 1:0]              STagID,
+  input wire                            STagInOrder,
+  
+  // Thread group
+  output reg [`connid_width - 1:0]      MConnID,
+  output reg [`threads - 1:0]           MDataThreadID,
+  output reg [`threads - 1:0]           MThreadBusy,
+  output reg [`threads - 1:0]           MThreadID,
+  input wire [`threads - 1:0]           SDataThreadBusy,
+  input wire [`threads - 1:0]           SThreadBusy,
+  input wire [`threads - 1:0]           SThreadID,
+  
+  // Sideband group
+  output reg                            ConnectCap,
+  output reg [`control_wdth - 1:0]      Control,
+  output reg                            ControlBusy,
+  output reg                            ControlWr,
+  output reg [1:0]                      MConnect,
+  output reg                            MError,
+  output reg [`mflag_wdth - 1:0]        MFlag,
+  output reg                            MReset_n,
+  input wire                            SConnect,
+  input wire                            SError,
+  input wire [`threads - 1:0]           SFlag,
+  input wire                            SInterrupt,
+  input wire                            SReset_n,
+  output reg [`threads - 1:0]           Status,
+  output reg                            StatusBusy,
+  output reg                            StatusRd,
+  input wire                            SWait,
+  
+  // Test group
+  output reg                            ClkByp,
+  output reg [`scanctrl_wdth - 1:0]     Scanctrl,
+  output reg [`scanport_wdth - 1:0]     Scanin,
+  output reg [`scanport_wdth - 1:0]     Scanout,
+  output reg                            TCK,
+  output reg                            TDI,
+  output reg                            TDO,
+  output reg                            TestClk,
+  output reg                            TMS,
+  output reg                            TRST_N
   /*}}}*/
 );
 
@@ -100,7 +204,7 @@ always @(state or read_request or write_request or SCmdAccept or SResp or SData)
   case (SResp)
     // No response
     NULL: begin
-      read_data <= `SDATA_WIDTH'bx;
+      read_data <= {`data_wdth{1'bx}};
     end
 
     // Data valid / accept
@@ -115,11 +219,11 @@ always @(state or read_request or write_request or SCmdAccept or SResp or SData)
 
     // Response error
     ERR: begin
-      read_data <= `SDATA_WIDTH'bx;
+      read_data <= {`data_wdth{1'bx}};
     end
 
     default: begin
-      read_data <= `SDATA_WIDTH'bx;
+      read_data <= {`data_wdth{1'bx}};
     end
   endcase
 /*}}}*/
@@ -180,9 +284,17 @@ end
 // Output logic/*{{{*/
 always @(posedge Clk) begin
   if (reset) begin
-    MAddr <= `MADDR_WIDTH'bx;
+    // Basic group
+    MAddr <= {`addr_wdth{1'bx}};
     MCmd <= IDLE;
-    MData <= `MDATA_WIDTH'bx;
+    MData <= {`data_wdth{1'bx}};
+
+    // Simple group
+    MAddrSpace <= {`addr_wdth{1'b1}};
+    MByteEn <= {`data_wdth{1'b1}};
+    MDataByteEn <= {`data_wdth{1'b1}};
+    MDataInfo <= 1'b0;
+    MReqInfo <= 0;
   end
 
   else begin
@@ -191,27 +303,59 @@ always @(posedge Clk) begin
     // Handle Master outputs/*{{{*/
     case (1'b1)
       next[IDLE]: begin
-        MAddr <= `MADDR_WIDTH'bx;
+        // Basic group
+        MAddr <= {`addr_wdth{1'bx}};
         MCmd <= IDLE;
-        MData <= `MDATA_WIDTH'bx;
+        MData <= {`data_wdth{1'bx}};
+
+        // Simple group
+        MAddrSpace <= {`addr_wdth{1'b1}};
+        MByteEn <= {`data_wdth{1'b1}};
+        MDataByteEn <= {`data_wdth{1'b1}};
+        MDataInfo <= 1'b0;
+        MReqInfo <= 0;
       end
 
       next[WR]: begin
+        // Basic group
         MAddr <= address;
         MCmd <= WR;
         MData <= write_data;
+
+        // Simple group
+        MAddrSpace <= {`addr_wdth{1'b1}};
+        MByteEn <= {`data_wdth{1'b1}};
+        MDataByteEn <= {`data_wdth{1'b1}};
+        MDataInfo <= 1'b0;
+        MReqInfo <= 0;
       end
 
       next[RD]: begin
+        // Basic group
         MAddr <= address;
         MCmd <= RD;
-        MData <= `MDATA_WIDTH'bx;
+        MData <= {`data_wdth{1'bx}};
+
+        // Simple group
+        MAddrSpace <= {`addr_wdth{1'b1}};
+        MByteEn <= {`data_wdth{1'b1}};
+        MDataByteEn <= {`data_wdth{1'b1}};
+        MDataInfo <= 1'b0;
+        MReqInfo <= 0;
       end
 
       default: begin
-        MAddr <= `MADDR_WIDTH'bx;
+        // Basic group
+        MAddr <= {`addr_wdth{1'bx}};
         MCmd <= IDLE;
-        MData <= `MDATA_WIDTH'bx;
+        MData <= {`data_wdth{1'bx}};
+
+        // Simple group
+        MAddrSpace <= {`addr_wdth{1'b1}};
+        MByteEn <= {`data_wdth{1'b1}};
+        MDataByteEn <= {`data_wdth{1'b1}};
+        MDataInfo <= 1'b0;
+        MReqInfo <= 0;
       end
     endcase
     /*}}}*/
