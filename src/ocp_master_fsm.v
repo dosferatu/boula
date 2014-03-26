@@ -19,7 +19,7 @@
  *
  */ 
 
-// OCP 3.0 interface/*{{{*/
+// OCP 2.2 interface/*{{{*/
 
 // Basic group
 `define addr_wdth 64
@@ -71,7 +71,7 @@ module ocp_master_fsm(
   output reg [`data_wdth - 1:0]         read_data,    // Coming from OCP bus
   /*}}}*/
 
-  // OCP 3.0 interface/*{{{*/
+  // OCP 2.2 interface/*{{{*/
   
   // Basic group
   output wire                           Clk,
@@ -85,6 +85,7 @@ module ocp_master_fsm(
   input wire [`data_wdth - 1:0]         SData,
   input wire                            SDataAccept,
   input wire [1:0]                      SResp,
+  input wire                            SRespLast,
 
   // Simple group
   //output reg [`addrspace_wdth - 1:0]    MAddrSpace,
@@ -162,7 +163,7 @@ module ocp_master_fsm(
 
 // Declarations/*{{{*/
 
-// OCP 3.0 Encodings/*{{{*/
+// OCP 2.2 Encodings/*{{{*/
 
 // MCmd encoding
 parameter IDLE  = 3'b000;
@@ -242,10 +243,8 @@ parameter BLCK  = 3'b111;   // 2-dimensional Block
 reg [16:0] state;
 reg [16:0] next;
 
-reg [9:0] burst_count;
+reg [9:0] burst_count;  // For incrementing (INCR) type burst sequences
 assign Clk = sys_clk & EnableClk;
-//assign MReqLast = ((burst_count == burst_length) & state[M_WR_INCR]);
-//assign MReqLast = burst_count & burst_length;
 /*}}}*/
 
 // State transition logic/*{{{*/
@@ -352,7 +351,7 @@ always @(state or read_request or write_request or MReqLast or SCmdAccept or SRe
 
     // Wait for SCmdAccept to be set
     state[M_RD_INCR]: begin
-      if (SCmdAccept) begin
+      if (SCmdAccept & MReqLast) begin
         next[M_IDLE] <= 1'b1;
       end
 
@@ -375,7 +374,7 @@ always @(posedge Clk) begin
   if (reset) begin
     burst_count <= 10'b0;
 
-    // OCP 3.0 Interface
+    // OCP 2.2 Interface
 
     // Basic group
     MAddr             <= {`addr_wdth{1'bx}};
@@ -395,7 +394,7 @@ always @(posedge Clk) begin
     MAtomicLength     <= 1'b1;
     MBlockHeight      <= 1'b1;
     MBlockStride      <= 1'b0;
-    //MBurstLength      <= 1'b1;
+    MBurstLength      <= 1'b1;
     MBurstPrecise     <= 1'b1;
     MBurstSeq         <= INCR;
     MBurstSingleSeq   <= 1'b0;
@@ -451,7 +450,7 @@ always @(posedge Clk) begin
       next[IDLE]: begin
         burst_count <= 10'b0;
 
-        // OCP 3.0 Interface
+        // OCP 2.2 Interface
 
         // Basic group
         MAddr             <= {`addr_wdth{1'b0}};
@@ -525,7 +524,7 @@ always @(posedge Clk) begin
         // then reset the counter; otherwise do not increment.
         burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : 10'b0) : burst_count;
 
-        // OCP 3.0 Interface
+        // OCP 2.2 Interface
 
         // Basic group
         MAddr             <= address;
@@ -594,9 +593,9 @@ always @(posedge Clk) begin
 
       // READ/*{{{*/
       next[M_RD_INCR]: begin
-        burst_count <= 10'b0;
+        burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : 10'b0) : burst_count;
 
-        // OCP 3.0 Interface
+        // OCP 2.2 Interface
 
         // Basic group
         MAddr             <= address;
@@ -616,15 +615,13 @@ always @(posedge Clk) begin
         MAtomicLength     <= 1'b1;
         MBlockHeight      <= 1'b1;
         MBlockStride      <= 1'b0;
-        //MBurstLength      <= 1'b1;
         MBurstLength      <= burst_length;
         MBurstPrecise     <= 1'b1;
         MBurstSeq         <= INCR;
         MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        //MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
-        MReqLast          <= 1'bx;
+        MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
         MReqRowLast       <= 1'bx;
 
         // Tag group
@@ -669,7 +666,7 @@ always @(posedge Clk) begin
       default: begin
         burst_count <= 10'b0;
 
-        // OCP 3.0 Interface
+        // OCP 2.2 Interface
 
         // Basic group
         MAddr             <= {`addr_wdth{1'b0}};
@@ -689,8 +686,7 @@ always @(posedge Clk) begin
         MAtomicLength     <= 1'b1;
         MBlockHeight      <= 1'b1;
         MBlockStride      <= 1'b0;
-        //MBurstLength      <= 1'b1;
-        MBurstLength      <= burst_length;
+        MBurstLength      <= 1'b1;
         MBurstPrecise     <= 1'b1;
         MBurstSeq         <= INCR;
         MBurstSingleSeq   <= 1'b0;
