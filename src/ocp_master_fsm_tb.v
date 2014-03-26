@@ -10,27 +10,36 @@
 
 module ocp_master_fsm_tb();
   // Bridge interface/*{{{*/
-  reg [`MADDR_WIDTH - 1:0] address;
-  reg                      data_valid;
-  reg                      read_request;
-  reg                      reset;
-  reg [`MDATA_WIDTH - 1:0] write_data;   // Coming from PCIe side
-  reg                      write_request;
+  reg [`MADDR_WIDTH - 1:0]  address;
+  reg [9:0]                 burst_length;
+  reg                       data_valid;
+  reg                       read_request;
+  reg                       reset;
+  reg [`MDATA_WIDTH - 1:0]  write_data;   // Coming from PCIe side
+  reg                       write_request;
 
   wire [`MDATA_WIDTH - 1:0] read_data;    // Coming from OCP bus
   /*}}}*/
 
   // OCP 3.0 interface/*{{{*/
-  reg                      Clk;
-  reg                      EnableClk;
-  reg                      SCmdAccept;
-  reg [`SDATA_WIDTH - 1:0] SData;
-  reg                      SDataAccept;
-  reg [1:0]                SResp;
 
+  // Basic group
+  reg                       clk;
+  wire                      Clk;
+  reg                       EnableClk;
+  reg [`SDATA_WIDTH - 1:0]  SData;
+  reg [1:0]                 SResp;
   wire [`MADDR_WIDTH - 1:0] MAddr;
   wire [2:0]                MCmd;
   wire [`MDATA_WIDTH - 1:0] MData;
+
+  // Simple group
+  reg                       SCmdAccept;
+  reg                       SDataAccept;
+
+  // Burst group
+  wire [9:0]                MBurstLength;
+  wire                      MReqLast;
   //wire                      MDataValid;
   /*}}}*/
 
@@ -53,12 +62,14 @@ parameter ERR   = 2'b11;
 
 ocp_master_fsm U0(
   .address(address),
+  .burst_length(burst_length),
   //.data_valid(data_valid),
   .read_request(read_request),
   .reset(reset),
   .write_data(write_data),
   .write_request(write_request),
   .read_data(read_data),
+  .sys_clk(clk),
   .Clk(Clk),
   .EnableClk(EnableClk),
   .SCmdAccept(SCmdAccept),
@@ -66,9 +77,11 @@ ocp_master_fsm U0(
   //.SDataAccept(SDataAccept),
   .SResp(SResp),
   .MAddr(MAddr),
+  .MBurstLength(MBurstLength),
   .MCmd(MCmd),
-  .MData(MData)
+  .MData(MData),
   //.MDataValid(MDataValid)
+  .MReqLast(MReqLast)
 );
 /*}}}*/
 
@@ -76,6 +89,7 @@ ocp_master_fsm U0(
 initial begin
   // Bridge simulation initialization
   address       <= `MADDR_WIDTH'bx;
+  burst_length  <= 1'b1;
   data_valid    <= 1'b0;
   read_request  <= 1'b0;
   reset         <= 1'b1;
@@ -83,7 +97,7 @@ initial begin
   write_request <= 1'b0;
 
   // OCP interface initialization
-  Clk           <= 1'b0;
+  clk           <= 1'b0;
   EnableClk     <= 1'b0;
   SCmdAccept    <= 1'b0;
   SData         <= `SDATA_WIDTH'bx;
@@ -92,7 +106,7 @@ initial begin
   
   // Start the clock with a 10 unit period
   forever begin
-    #10 Clk <= ~Clk;
+    #10 clk <= ~clk;
   end
 end
 /*}}}*/
@@ -160,6 +174,40 @@ initial begin
   #20 SResp <= NULL;
   SData <= `SDATA_WIDTH'bx;
 /*}}}*/
+
+
+  // Perform a burst write to the slave/*{{{*/
+
+  // WR state
+  // Request phase (Data 1)
+  #60 address <= 64'b0;
+  burst_length <= 10'h4;
+  read_request <= 1'b0;
+  write_data <= `MDATA_WIDTH'h0;
+  write_request <= 1'b1;
+  #20 SCmdAccept <= 1'b1;
+
+  // insert burst stuff here
+  #20 address <= 64'h4;
+  burst_length <= 10'h4;
+  write_data <= `MDATA_WIDTH'h1;
+  write_request <= 1'b0;
+  
+  #20 address <= 64'h8;
+  burst_length <= 10'h4;
+  write_data <= `MDATA_WIDTH'h2;
+  write_request <= 1'b0;
+  
+  #20 address <= 64'hC;
+  burst_length <= 10'h4;
+  write_data <= `MDATA_WIDTH'h3;
+  write_request <= 1'b0;
+
+  #20 address <= 64'b0;
+  burst_length <= 10'b0;
+  write_data <= `MDATA_WIDTH'b0;
+  write_request <= 1'b0;
+  /*}}}*/
 end
 /*}}}*/
 endmodule
