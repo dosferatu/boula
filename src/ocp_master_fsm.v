@@ -59,13 +59,14 @@ module ocp_master_fsm(
   // Bridge interface/*{{{*/
   input wire                            sys_clk,
   input wire [`addr_wdth - 1:0]         address,
-  //input wire                            burst_mode,
+  input wire [2:0]                      burst_seq,
   input wire [9:0]                      burst_length,
   input wire                            data_valid,
   input wire                            read_request,
   input wire                            reset,
   input wire [`data_wdth - 1:0]         write_data,   // Coming from PCIe side
   input wire                            write_request,
+  input wire                            writeresp_enable,
 
   output reg [`data_wdth - 1:0]         read_data,    // Coming from OCP bus
   /*}}}*/
@@ -104,8 +105,8 @@ module ocp_master_fsm(
   output reg                            MBurstSingleSeq,
   output reg                            MDataLast,
   output reg                            MDataRowLast,
-  //output reg                            MReqLast,
-  output wire                           MReqLast,
+  output reg                            MReqLast,
+  //output wire                           MReqLast,
   output reg                            MReqRowLast,
   input wire                            SRespLast,
   input wire                            SRespRowLast
@@ -173,6 +174,32 @@ parameter WRNP  = 3'b101;
 parameter WRC   = 3'b110;
 parameter BCST  = 3'b111;
 
+// State encodings
+parameter M_IDLE      = 5'b00000;
+parameter M_WR        = 5'b00001;
+parameter M_RD        = 5'b00010;
+parameter M_RDEX      = 5'b00011;
+parameter M_RDL       = 5'b00100;
+parameter M_WRNP      = 5'b00101;
+parameter M_WRC       = 5'b00110;
+parameter M_BCST      = 5'b00111;
+parameter M_WR_INCR   = 5'b01000;
+parameter M_WR_DFLT1  = 5'b01001;
+parameter M_WR_WRAP   = 5'b01010;
+parameter M_WR_DFLT2  = 5'b01011;
+parameter M_WR_XOR    = 5'b01100;
+parameter M_WR_STRM   = 5'b01101;
+parameter M_WR_UNKN   = 5'b01110;
+parameter M_WR_BLCK   = 5'b01111;
+parameter M_RD_INCR   = 5'b10000;
+parameter M_RD_DFLT1  = 5'b10001;
+parameter M_RD_WRAP   = 5'b10010;
+parameter M_RD_DFLT2  = 5'b10011;
+parameter M_RD_XOR    = 5'b10100;
+parameter M_RD_STRM   = 5'b10101;
+parameter M_RD_UNKN   = 5'b10110;
+parameter M_RD_BLCK   = 5'b10111;
+
 // SResp encoding
 parameter NULL  = 2'b00;
 parameter DVA   = 2'b01;
@@ -212,20 +239,21 @@ parameter BLCK  = 3'b111;   // 2-dimensional Block
 //parameter SRESET_INACTIVE = 1'b1;
 /*}}}*/
 
-reg [2:0] state;
-reg [2:0] next;
+reg [16:0] state;
+reg [16:0] next;
 
 reg [9:0] burst_count;
 assign Clk = sys_clk & EnableClk;
-assign MReqLast = ((burst_count == burst_length) & state[WR]);
+//assign MReqLast = ((burst_count == burst_length) & state[M_WR_INCR]);
+//assign MReqLast = burst_count & burst_length;
 /*}}}*/
 
 // State transition logic/*{{{*/
 always @(posedge Clk) begin
   if (EnableClk) begin
     if (reset) begin
-      state <= 3'b0;
-      state[IDLE] <= 1'b1;
+      state <= 17'b0;
+      state[M_IDLE] <= 1'b1;
     end
 
     else begin
@@ -241,7 +269,7 @@ end
 
 // Next state logic/*{{{*/
 always @(state or read_request or write_request or MReqLast or SCmdAccept or SResp or SData) begin
-  next <= 3'b0;
+  next <= 17'b0;
 
   // Handle slave response/*{{{*/
   case (SResp)
@@ -273,44 +301,68 @@ always @(state or read_request or write_request or MReqLast or SCmdAccept or SRe
 
   // Handle read or write requests/*{{{*/
   case (1'b1)
-    state[IDLE]: begin
+    state[M_IDLE]: begin
       if (read_request) begin
-        next[RD] <= 1'b1;
+        case (burst_seq)
+          INCR: begin
+            next[M_RD_INCR] <= 1'b1;
+          end
+
+          //BLCK: begin
+            //next[M_RD_BLCK] <= 1'b1;
+          //end
+
+          default: begin
+            next[M_RD_INCR] <= 1'b1;
+          end
+        endcase
       end
 
       else if (write_request) begin
-        next[WR] <= 1'b1;
+        case (burst_seq)
+          INCR: begin
+            next[M_WR_INCR] <= 1'b1;
+          end
+
+          //BLCK: begin
+            //next[M_WR_BLCK] <= 1'b1;
+          //end
+
+          default: begin
+            next[M_WR_INCR] <= 1'b1;
+          end
+        endcase
       end
 
       else begin
-        next[IDLE] <= 1'b1;
+        next[M_IDLE] <= 1'b1;
       end
     end
 
     // Wait for SCmdAccept to be set
-    state[WR]: begin
+    state[M_WR_INCR]: begin
       if (SCmdAccept & MReqLast) begin
-        next[IDLE] <= 1'b1;
+        next[M_IDLE] <= 1'b1;
       end
 
       else begin
-        next[WR] <= 1'b1;
+        next[M_WR_INCR] <= 1'b1;
       end
     end
 
     // Wait for SCmdAccept to be set
-    state[RD]: begin
+    state[M_RD_INCR]: begin
       if (SCmdAccept) begin
-        next[IDLE] <= 1'b1;
+        next[M_IDLE] <= 1'b1;
       end
 
       else begin
-        next[RD] <= 1'b1;
+        next[M_RD_INCR] <= 1'b1;
       end
     end
 
     default: begin
-      next[IDLE] <= 1'b1;
+      next[M_IDLE] <= 1'b1;
     end
   endcase
   /*}}}*/
@@ -322,7 +374,7 @@ always @(posedge Clk) begin
   // Reset/*{{{*/
   if (reset) begin
     burst_count <= 10'b0;
-    
+
     // OCP 3.0 Interface
 
     // Basic group
@@ -349,7 +401,7 @@ always @(posedge Clk) begin
     MBurstSingleSeq   <= 1'b0;
     MDataLast         <= 1'bx;
     MDataRowLast      <= 1'bx;
-    //MReqLast          <= 1'bx;
+    MReqLast          <= 1'bx;
     MReqRowLast       <= 1'bx;
 
     // Tag group
@@ -425,7 +477,7 @@ always @(posedge Clk) begin
         MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        //MReqLast          <= 1'bx;
+        MReqLast          <= 1'bx;
         MReqRowLast       <= 1'bx;
 
         // Tag group
@@ -467,7 +519,10 @@ always @(posedge Clk) begin
       /*}}}*/
 
       // WRITE/*{{{*/
-      next[WR]: begin
+      next[M_WR_INCR]: begin
+        // Increment the burst count if SCmdAccept is set and the burst count
+        // is less than the burst length. If the count is equal to burst length
+        // then reset the counter; otherwise do not increment.
         burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : 10'b0) : burst_count;
 
         // OCP 3.0 Interface
@@ -496,7 +551,7 @@ always @(posedge Clk) begin
         MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        //MReqLast          <= (burst_count == burst_length) ? 1'b1 : 1'b0;
+        MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
         MReqRowLast       <= 1'bx;
 
         // Tag group
@@ -535,10 +590,10 @@ always @(posedge Clk) begin
         //TMS               <= 1'bx;
         //TRST_N            <= 1'bx;
       end
-        /*}}}*/
+      /*}}}*/
 
       // READ/*{{{*/
-      next[RD]: begin
+      next[M_RD_INCR]: begin
         burst_count <= 10'b0;
 
         // OCP 3.0 Interface
@@ -568,7 +623,8 @@ always @(posedge Clk) begin
         MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        //MReqLast          <= 1'bx;
+        //MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
+        MReqLast          <= 1'bx;
         MReqRowLast       <= 1'bx;
 
         // Tag group
@@ -614,7 +670,7 @@ always @(posedge Clk) begin
         burst_count <= 10'b0;
 
         // OCP 3.0 Interface
-        
+
         // Basic group
         MAddr             <= {`addr_wdth{1'b0}};
         MCmd              <= IDLE;
@@ -640,7 +696,7 @@ always @(posedge Clk) begin
         MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        //MReqLast          <= 1'bx;
+        MReqLast          <= 1'bx;
         MReqRowLast       <= 1'bx;
 
         // Tag group

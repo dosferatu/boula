@@ -12,6 +12,7 @@ module ocp_master_fsm_tb();
   // Bridge interface/*{{{*/
   reg [`MADDR_WIDTH - 1:0]  address;
   reg [9:0]                 burst_length;
+  reg [2:0]                 burst_seq;
   reg                       data_valid;
   reg                       read_request;
   reg                       reset;
@@ -63,6 +64,7 @@ parameter ERR   = 2'b11;
 ocp_master_fsm U0(
   .address(address),
   .burst_length(burst_length),
+  .burst_seq(burst_seq),
   //.data_valid(data_valid),
   .read_request(read_request),
   .reset(reset),
@@ -90,6 +92,7 @@ initial begin
   // Bridge simulation initialization
   address       <= `MADDR_WIDTH'bx;
   burst_length  <= 1'b1;
+  burst_seq     <= 2'b00;
   data_valid    <= 1'b0;
   read_request  <= 1'b0;
   reset         <= 1'b1;
