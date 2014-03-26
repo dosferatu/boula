@@ -200,7 +200,7 @@ initial begin
 /*}}}*/
 
 
-  // Perform a burst write to the slave/*{{{*/
+  // Perform an incrementing precise burst write to the slave/*{{{*/
 
   // WR state
   // Request phase (Data 1)
@@ -240,7 +240,7 @@ initial begin
   /*}}}*/
 
 
-  // Perform a burst read request to the slave/*{{{*/
+  // Perform an incrementing precise burst read request to the slave/*{{{*/
 
   // RD state
   // Request phase (Data 1)
