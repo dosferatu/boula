@@ -60,6 +60,7 @@ module ocp_master_fsm(
   input wire                            sys_clk,
   input wire [`addr_wdth - 1:0]         address,
   input wire [2:0]                      burst_seq,
+  input wire                            burst_single_req,
   input wire [9:0]                      burst_length,
   input wire                            data_valid,
   input wire                            read_request,
@@ -85,7 +86,6 @@ module ocp_master_fsm(
   input wire [`data_wdth - 1:0]         SData,
   input wire                            SDataAccept,
   input wire [1:0]                      SResp,
-  input wire                            SRespLast,
 
   // Simple group
   //output reg [`addrspace_wdth - 1:0]    MAddrSpace,
@@ -546,11 +546,12 @@ always @(posedge Clk) begin
         MBlockStride      <= 1'b0;
         MBurstLength      <= burst_length;
         MBurstPrecise     <= 1'b1;
-        MBurstSeq         <= INCR;
-        MBurstSingleSeq   <= 1'b0;
+        MBurstSeq         <= burst_seq;
+        MBurstSingleSeq   <= burst_single_req;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
+        //MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
+        MReqLast          <= (burst_count == (burst_length - 1'b1)) | burst_single_req;
         MReqRowLast       <= 1'bx;
 
         // Tag group
@@ -617,11 +618,12 @@ always @(posedge Clk) begin
         MBlockStride      <= 1'b0;
         MBurstLength      <= burst_length;
         MBurstPrecise     <= 1'b1;
-        MBurstSeq         <= INCR;
-        MBurstSingleSeq   <= 1'b0;
+        MBurstSeq         <= burst_seq;
+        MBurstSingleSeq   <= burst_single_req;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
+        //MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
+        MReqLast          <= (burst_count == (burst_length - 1'b1)) | burst_single_req;
         MReqRowLast       <= 1'bx;
 
         // Tag group
