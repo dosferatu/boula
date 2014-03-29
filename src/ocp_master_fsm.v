@@ -57,14 +57,15 @@
 
 module ocp_master_fsm(
   // Bridge interface/*{{{*/
-  input wire                            sys_clk,
   input wire [`addr_wdth - 1:0]         address,
+  input wire                            enable,
   input wire [2:0]                      burst_seq,
   input wire                            burst_single_req,
   input wire [9:0]                      burst_length,
   input wire                            data_valid,
   input wire                            read_request,
   input wire                            reset,
+  input wire                            sys_clk,
   input wire [`data_wdth - 1:0]         write_data,   // Coming from PCIe side
   input wire                            write_request,
   input wire                            writeresp_enable,
@@ -76,7 +77,7 @@ module ocp_master_fsm(
   
   // Basic group
   output wire                           Clk,
-  input wire                            EnableClk,
+  inout wire                            EnableClk,
   output reg [`addr_wdth - 1:0]         MAddr,
   output reg [2:0]                      MCmd,
   output reg [`data_wdth - 1:0]         MData,
@@ -107,7 +108,6 @@ module ocp_master_fsm(
   output reg                            MDataLast,
   output reg                            MDataRowLast,
   output reg                            MReqLast,
-  //output wire                           MReqLast,
   output reg                            MReqRowLast,
   input wire                            SRespLast,
   input wire                            SRespRowLast
@@ -218,7 +218,8 @@ reg [3:0] state;
 reg [3:0] next;
 
 reg [9:0] burst_count;  // For incrementing (INCR) type burst sequences
-assign Clk = sys_clk & EnableClk;
+assign EnableClk = enable;
+assign Clk = sys_clk & enable;
 /*}}}*/
 
 // State transition logic/*{{{*/
@@ -275,17 +276,19 @@ always @(state or read_request or write_request or MReqLast or SCmdAccept or SRe
   // Handle read or write requests/*{{{*/
   case (1'b1)
     state[IDLE]: begin
-      if (read_request) begin
-        next[RD] <= 1'b1;
-      end
+      case (1'b1)
+        read_request: begin
+          next[RD] <= 1'b1;
+        end
 
-      else if (write_request) begin
-        next[WR] <= 1'b1;
-      end
+        write_request: begin
+          next[WR] <= 1'b1;
+        end
 
-      else begin
-        next[IDLE] <= 1'b1;
-      end
+        default: begin
+          next[IDLE] <= 1'b1;
+        end
+      endcase
     end
 
     // Wait for SCmdAccept to be set
@@ -469,10 +472,7 @@ always @(posedge Clk) begin
 
       // WRITE/*{{{*/
       next[WR]: begin
-        // Increment the burst count if SCmdAccept is set and the burst count
-        // is less than the burst length. If the count is equal to burst length
-        // then reset the counter; otherwise do not increment.
-        burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : `burstlength_wdth'b0) : burst_count;
+        burst_count <= (SCmdAccept & (burst_count < burst_length)) ? burst_count + 1'b1 : burst_count;
 
         // OCP 2.2 Interface
 
@@ -544,7 +544,7 @@ always @(posedge Clk) begin
 
       // READ/*{{{*/
       next[RD]: begin
-        burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : `burstlength_wdth'b0) : burst_count;
+        burst_count <= (SCmdAccept & (burst_count < burst_length)) ? burst_count + 1'b1 : burst_count;
 
         // OCP 2.2 Interface
 

@@ -10,10 +10,12 @@
 
 module ocp_master_fsm_tb();
   // Bridge interface/*{{{*/
+  reg                       clk;
   reg [`MADDR_WIDTH - 1:0]  address;
   reg [9:0]                 burst_length;
   reg [2:0]                 burst_seq;
   reg                       burst_single_req;
+  reg                       enable;
   reg                       data_valid;
   reg                       read_request;
   reg                       reset;
@@ -26,9 +28,8 @@ module ocp_master_fsm_tb();
   // OCP 2.2 interface/*{{{*/
 
   // Basic group
-  reg                       clk;
   wire                      Clk;
-  reg                       EnableClk;
+  wire                       EnableClk;
   reg [`SDATA_WIDTH - 1:0]  SData;
   reg [1:0]                 SResp;
   reg                       SRespLast;
@@ -65,6 +66,7 @@ parameter ERR   = 2'b11;
 
 ocp_master_fsm U0(
   .address(address),
+  .enable(enable),
   .burst_length(burst_length),
   .burst_seq(burst_seq),
   .burst_single_req(burst_single_req),
@@ -105,7 +107,7 @@ initial begin
 
   // OCP interface initialization
   clk               <= 1'b0;
-  EnableClk         <= 1'b0;
+  enable            <= 1'b0;
   SCmdAccept        <= 1'b0;
   SData             <= `SDATA_WIDTH'bx;
   SDataAccept       <= 1'b0;
@@ -121,42 +123,42 @@ end
 
 // Test bench stimuli/*{{{*/
 initial begin
-  #20 reset <= 1'b0;
-  EnableClk <= 1'b1;
+  #20 reset         <= 1'b0;
+  enable            <= 1'b1;
 
   // Perform a simple write to the slave/*{{{*/
   
   // WR state
   // Request phase
-  #50 address <= 64'hFFFFFFFFFFFFFFFF;
-  write_request <= 1'b1;
-  #20 SCmdAccept <= 1'b1;
-  burst_length  <= 1'b1;
-  write_data <= `MDATA_WIDTH'hFF;
-  write_request <= 1'b0;
+  #50 address       <= 64'hFFFFFFFFFFFFFFFF;
+  write_request     <= 1'b1;
+  #20 SCmdAccept    <= 1'b1;
+  burst_length      <= 1'b1;
+  write_data        <= `MDATA_WIDTH'hFF;
+  write_request     <= 1'b0;
 
   // Response phase
-  SResp <= NULL;
-  SData <= `SDATA_WIDTH'bx;
+  SResp             <= NULL;
+  SData             <= `SDATA_WIDTH'bx;
 
 
   // IDLE state
   // Request phase
-  #20 address <= 64'bx;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b0;
+  #20 address       <= 64'bx;
+  write_data        <= `MDATA_WIDTH'bx;
+  write_request     <= 1'b0;
+  SCmdAccept        <= 1'b0;
 
   // Finish stimuli
-  #20 address <= 64'b0;
-  burst_length <= 10'b0;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b0;
-  SResp <= NULL;
-  SRespLast <= 1'bx;
-  SData <= `SDATA_WIDTH'bx;
+  #20 address       <= 64'b0;
+  burst_length      <= 10'b0;
+  read_request      <= 1'b0;
+  write_data        <= `MDATA_WIDTH'bx;
+  write_request     <= 1'b0;
+  SCmdAccept        <= 1'b0;
+  SResp             <= NULL;
+  SRespLast         <= 1'bx;
+  SData             <= `SDATA_WIDTH'bx;
 /*}}}*/
 
 
@@ -164,40 +166,40 @@ initial begin
   
   // RD state
   // Request phase
-  #60 address <= 64'hFFFFFFFFFFFFFFFF;
-  read_request <= 1'b1;
-  #20 SCmdAccept <= 1'b1;
-  burst_length <= 10'b1;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'bx;
+  #60 address       <= 64'hFFFFFFFFFFFFFFFF;
+  read_request      <= 1'b1;
+  #20 SCmdAccept    <= 1'b1;
+  burst_length      <= 10'b1;
+  read_request      <= 1'b0;
+  write_data        <= `MDATA_WIDTH'bx;
 
   // Response phase
-  SResp <= NULL;
-  SData <= `SDATA_WIDTH'bx;
+  SResp             <= NULL;
+  SData             <= `SDATA_WIDTH'bx;
 
 
   // IDLE state
   // Request phase
-  #20 address <= 64'bx;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b0;
+  #20 address       <= 64'bx;
+  write_data        <= `MDATA_WIDTH'bx;
+  write_request     <= 1'b0;
+  SCmdAccept        <= 1'b0;
 
   // Response phase
-  SResp <= DVA;
-  SRespLast <= 1'b1;
-  SData <= `SDATA_WIDTH'hFF;
+  SResp             <= DVA;
+  SRespLast         <= 1'b1;
+  SData             <= `SDATA_WIDTH'hFF;
   
   // Finish stimuli
-  #20 address <= 64'b0;
-  burst_length <= 10'b0;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b0;
-  SResp <= NULL;
-  SRespLast <= 1'bx;
-  SData <= `SDATA_WIDTH'bx;
+  #20 address       <= 64'b0;
+  burst_length      <= 10'b0;
+  read_request      <= 1'b0;
+  write_data        <= `MDATA_WIDTH'bx;
+  write_request     <= 1'b0;
+  SCmdAccept        <= 1'b0;
+  SResp             <= NULL;
+  SRespLast         <= 1'bx;
+  SData             <= `SDATA_WIDTH'bx;
 /*}}}*/
 
 
@@ -277,39 +279,39 @@ initial begin
 
   // WR state
   // Request phase (Data 1)
-  #60 address <= 64'b0;
-  burst_length <= 10'h4;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'h0;
-  write_request <= 1'b1;
-  #20 SCmdAccept <= 1'b1;
-  write_request <= 1'b0;
+  #60 address         <= 64'b0;
+  burst_length        <= 10'h4;
+  read_request        <= 1'b0;
+  write_data          <= `MDATA_WIDTH'h0;
+  write_request       <= 1'b1;
+  #20 SCmdAccept      <= 1'b1;
+  write_request       <= 1'b0;
 
   // Burst write data
-  #20 address <= 64'h4;
-  burst_length <= 10'h4;
-  write_data <= `MDATA_WIDTH'h1;
+  #20 address         <= 64'h4;
+  burst_length        <= 10'h4;
+  write_data          <= `MDATA_WIDTH'h1;
   
-  #20 address <= 64'h8;
-  burst_length <= 10'h4;
-  write_data <= `MDATA_WIDTH'h2;
-  write_request <= 1'b0;
+  #20 address         <= 64'h8;
+  burst_length        <= 10'h4;
+  write_data          <= `MDATA_WIDTH'h2;
+  write_request       <= 1'b0;
   
-  #20 address <= 64'hC;
-  burst_length <= 10'h4;
-  write_data <= `MDATA_WIDTH'h3;
-  write_request <= 1'b0;
+  #20 address         <= 64'hC;
+  burst_length        <= 10'h4;
+  write_data          <= `MDATA_WIDTH'h3;
+  write_request       <= 1'b0;
 
   // Finish stimuli
-  #20 address <= 64'b0;
-  burst_length <= 10'b0;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b0;
-  SResp <= NULL;
-  SRespLast <= 1'bx;
-  SData <= `SDATA_WIDTH'bx;
+  #20 address         <= 64'b0;
+  burst_length        <= 10'b0;
+  read_request        <= 1'b0;
+  write_data          <= `MDATA_WIDTH'bx;
+  write_request       <= 1'b0;
+  SCmdAccept          <= 1'b0;
+  SResp               <= NULL;
+  SRespLast           <= 1'bx;
+  SData               <= `SDATA_WIDTH'bx;
   /*}}}*/
 
 
@@ -317,75 +319,74 @@ initial begin
 
   // RD state
   // Request phase (Data 1)
-  #60 address <= 64'b0;
-  burst_length <= 10'h4;
-  read_request <= 1'b1;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  #20 read_request <= 1'b0;
-  #60 SCmdAccept <= 1'b1;       // Simulate a delay for slave ready
+  #60 address         <= 64'b0;
+  burst_length        <= 10'h4;
+  read_request        <= 1'b1;
+  write_data          <= `MDATA_WIDTH'bx;
+  write_request       <= 1'b0;
+  #20 read_request    <= 1'b0;
+  #60 SCmdAccept      <= 1'b1;       // Simulate a delay for slave ready
 
   // Request phase (Data 2)
-  #20 address <= 64'h4;
-  burst_length <= 10'h4;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b1;
+  #20 address         <= 64'h4;
+  burst_length        <= 10'h4;
+  read_request        <= 1'b0;
+  write_data          <= `MDATA_WIDTH'bx;
+  write_request       <= 1'b0;
+  SCmdAccept          <= 1'b1;
 
   // Request phase (Data 3)
-  #20 address <= 64'h8;
-  burst_length <= 10'h4;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b1;
+  #20 address         <= 64'h8;
+  burst_length        <= 10'h4;
+  read_request        <= 1'b0;
+  write_data          <= `MDATA_WIDTH'bx;
+  write_request       <= 1'b0;
+  SCmdAccept          <= 1'b1;
   
   // Data finally starts coming in from the slave
   // Response phase (Data 1)
-  SResp <= DVA;
-  SData <= `SDATA_WIDTH'h4;
-  SRespLast <= 1'b0;
+  SResp               <= DVA;
+  SData               <= `SDATA_WIDTH'h4;
+  SRespLast           <= 1'b0;
 
   // Request phase (Data 4)
-  #20 address <= 64'hC;
-  burst_length <= 10'h4;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b1;
+  #20 address         <= 64'hC;
+  burst_length        <= 10'h4;
+  read_request        <= 1'b0;
+  write_data          <= `MDATA_WIDTH'bx;
+  write_request       <= 1'b0;
+  SCmdAccept          <= 1'b1;
 
   // Response phase (Data 2)
-  SResp <= DVA;
-  SData <= `SDATA_WIDTH'h8;
-  SRespLast <= 1'b0;
+  SResp               <= DVA;
+  SData               <= `SDATA_WIDTH'h8;
+  SRespLast           <= 1'b0;
 
   // MCmd should now be IDLE
   
-  #20 burst_length <= 10'h4;
-  SCmdAccept <= 1'b0;
+  #20 burst_length    <= 10'h4;
+  SCmdAccept          <= 1'b0;
 
   // Response phase (Data 3)
-  SResp <= DVA;
-  SData <= `SDATA_WIDTH'hC;
-  SRespLast <= 1'b0;
+  SResp               <= DVA;
+  SData               <= `SDATA_WIDTH'hC;
+  SRespLast           <= 1'b0;
   
   // Response phase (Data 4)
-  #20 SResp <= DVA;
-  SRespLast <= 1'b1;
-  SData <= `SDATA_WIDTH'h20;
+  #20 SResp           <= DVA;
+  SRespLast           <= 1'b1;
+  SData               <= `SDATA_WIDTH'h20;
 
   // Finish stimuli
-  #20 address <= 64'b0;
-  burst_length <= 10'b0;
-  read_request <= 1'b0;
-  write_data <= `MDATA_WIDTH'bx;
-  write_request <= 1'b0;
-  SCmdAccept <= 1'b0;
-  SResp <= NULL;
-  SRespLast <= 1'bx;
-  #20 $finish;
-  SData <= `SDATA_WIDTH'bx;
+  #20 address         <= 64'b0;
+  burst_length        <= 10'b0;
+  read_request        <= 1'b0;
+  write_data          <= `MDATA_WIDTH'bx;
+  write_request       <= 1'b0;
+  SCmdAccept          <= 1'b0;
+  SResp               <= NULL;
+  SRespLast           <= 1'bx;
+  SData               <= `SDATA_WIDTH'bx;
   /*}}}*/
 end
 /*}}}*/
