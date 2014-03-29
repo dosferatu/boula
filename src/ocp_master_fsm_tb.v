@@ -240,7 +240,7 @@ initial begin
 // Perform a single request burst read to the slave/*{{{*/
 
   // Request phase
-  #60 read_request      <= 1'b1;
+  #60 read_request      <= 1'b0;
   write_request         <= 1'b0;
   #20 SCmdAccept        <= 1'b1;
   address               <= 64'hFF;
