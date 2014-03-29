@@ -175,32 +175,6 @@ parameter WRNP  = 3'b101;
 parameter WRC   = 3'b110;
 parameter BCST  = 3'b111;
 
-// State encodings
-parameter M_IDLE      = 5'b00000;
-parameter M_WR        = 5'b00001;
-parameter M_RD        = 5'b00010;
-parameter M_RDEX      = 5'b00011;
-parameter M_RDL       = 5'b00100;
-parameter M_WRNP      = 5'b00101;
-parameter M_WRC       = 5'b00110;
-parameter M_BCST      = 5'b00111;
-parameter M_WR_INCR   = 5'b01000;
-parameter M_WR_DFLT1  = 5'b01001;
-parameter M_WR_WRAP   = 5'b01010;
-parameter M_WR_DFLT2  = 5'b01011;
-parameter M_WR_XOR    = 5'b01100;
-parameter M_WR_STRM   = 5'b01101;
-parameter M_WR_UNKN   = 5'b01110;
-parameter M_WR_BLCK   = 5'b01111;
-parameter M_RD_INCR   = 5'b10000;
-parameter M_RD_DFLT1  = 5'b10001;
-parameter M_RD_WRAP   = 5'b10010;
-parameter M_RD_DFLT2  = 5'b10011;
-parameter M_RD_XOR    = 5'b10100;
-parameter M_RD_STRM   = 5'b10101;
-parameter M_RD_UNKN   = 5'b10110;
-parameter M_RD_BLCK   = 5'b10111;
-
 // SResp encoding
 parameter NULL  = 2'b00;
 parameter DVA   = 2'b01;
@@ -240,8 +214,8 @@ parameter BLCK  = 3'b111;   // 2-dimensional Block
 //parameter SRESET_INACTIVE = 1'b1;
 /*}}}*/
 
-reg [16:0] state;
-reg [16:0] next;
+reg [3:0] state;
+reg [3:0] next;
 
 reg [9:0] burst_count;  // For incrementing (INCR) type burst sequences
 assign Clk = sys_clk & EnableClk;
@@ -251,8 +225,8 @@ assign Clk = sys_clk & EnableClk;
 always @(posedge Clk) begin
   if (EnableClk) begin
     if (reset) begin
-      state <= 17'b0;
-      state[M_IDLE] <= 1'b1;
+      state <= 3'b0;
+      state[IDLE] <= 1'b1;
     end
 
     else begin
@@ -268,7 +242,7 @@ end
 
 // Next state logic/*{{{*/
 always @(state or read_request or write_request or MReqLast or SCmdAccept or SResp or SData) begin
-  next <= 17'b0;
+  next <= 3'b0;
 
   // Handle slave response/*{{{*/
   case (SResp)
@@ -300,68 +274,44 @@ always @(state or read_request or write_request or MReqLast or SCmdAccept or SRe
 
   // Handle read or write requests/*{{{*/
   case (1'b1)
-    state[M_IDLE]: begin
+    state[IDLE]: begin
       if (read_request) begin
-        case (burst_seq)
-          INCR: begin
-            next[M_RD_INCR] <= 1'b1;
-          end
-
-          //BLCK: begin
-            //next[M_RD_BLCK] <= 1'b1;
-          //end
-
-          default: begin
-            next[M_RD_INCR] <= 1'b1;
-          end
-        endcase
+        next[RD] <= 1'b1;
       end
 
       else if (write_request) begin
-        case (burst_seq)
-          INCR: begin
-            next[M_WR_INCR] <= 1'b1;
-          end
-
-          //BLCK: begin
-            //next[M_WR_BLCK] <= 1'b1;
-          //end
-
-          default: begin
-            next[M_WR_INCR] <= 1'b1;
-          end
-        endcase
+        next[WR] <= 1'b1;
       end
 
       else begin
-        next[M_IDLE] <= 1'b1;
+        next[IDLE] <= 1'b1;
       end
     end
 
     // Wait for SCmdAccept to be set
-    state[M_WR_INCR]: begin
+    state[WR]: begin
       if (SCmdAccept & MReqLast) begin
-        next[M_IDLE] <= 1'b1;
+        next[IDLE] <= 1'b1;
       end
 
       else begin
-        next[M_WR_INCR] <= 1'b1;
+        next[WR] <= 1'b1;
       end
     end
 
     // Wait for SCmdAccept to be set
-    state[M_RD_INCR]: begin
+    state[RD]: begin
       if (SCmdAccept & MReqLast) begin
-        next[M_IDLE] <= 1'b1;
+        next[IDLE] <= 1'b1;
       end
 
       else begin
-        next[M_RD_INCR] <= 1'b1;
+        next[RD] <= 1'b1;
       end
     end
 
     default: begin
-      next[M_IDLE] <= 1'b1;
+      next[IDLE] <= 1'b1;
     end
   endcase
   /*}}}*/
@@ -372,7 +322,7 @@ end
 always @(posedge Clk) begin
   // Reset/*{{{*/
   if (reset) begin
-    burst_count <= 10'b0;
+    burst_count <= `burstlength_wdth'b0;
 
     // OCP 2.2 Interface
 
@@ -448,7 +398,7 @@ always @(posedge Clk) begin
     case (1'b1)
       // IDLE/*{{{*/
       next[IDLE]: begin
-        burst_count <= 10'b0;
+        burst_count <= `burstlength_wdth'b0;
 
         // OCP 2.2 Interface
 
@@ -518,11 +468,11 @@ always @(posedge Clk) begin
       /*}}}*/
 
       // WRITE/*{{{*/
-      next[M_WR_INCR]: begin
+      next[WR]: begin
         // Increment the burst count if SCmdAccept is set and the burst count
         // is less than the burst length. If the count is equal to burst length
         // then reset the counter; otherwise do not increment.
-        burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : 10'b0) : burst_count;
+        burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : `burstlength_wdth'b0) : burst_count;
 
         // OCP 2.2 Interface
 
@@ -593,8 +543,8 @@ always @(posedge Clk) begin
       /*}}}*/
 
       // READ/*{{{*/
-      next[M_RD_INCR]: begin
-        burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : 10'b0) : burst_count;
+      next[RD]: begin
+        burst_count <= SCmdAccept ? ((burst_count < burst_length) ? burst_count + 1'b1 : `burstlength_wdth'b0) : burst_count;
 
         // OCP 2.2 Interface
 
@@ -622,7 +572,6 @@ always @(posedge Clk) begin
         MBurstSingleSeq   <= burst_single_req;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        //MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
         MReqLast          <= (burst_count == (burst_length - 1'b1)) | burst_single_req;
         MReqRowLast       <= 1'bx;
 
@@ -666,7 +615,7 @@ always @(posedge Clk) begin
 
       // DEFAULT CASE (RESET)/*{{{*/
       default: begin
-        burst_count <= 10'b0;
+        burst_count <= `burstlength_wdth'b0;
 
         // OCP 2.2 Interface
 
