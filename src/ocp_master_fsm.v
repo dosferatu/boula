@@ -60,7 +60,7 @@ module ocp_master_fsm(
   input wire [`addr_wdth - 1:0]         address,
   input wire                            enable,
   input wire [2:0]                      burst_seq,
-  input wire                            burst_single_req,
+  input wire                            burst_single_req, // NOT IMPLEMENTED
   input wire [9:0]                      burst_length,
   input wire                            data_valid,
   input wire                            read_request,
@@ -68,7 +68,7 @@ module ocp_master_fsm(
   input wire                            sys_clk,
   input wire [`data_wdth - 1:0]         write_data,   // Coming from PCIe side
   input wire                            write_request,
-  input wire                            writeresp_enable,
+  input wire                            writeresp_enable, // NOT IMPLEMENTED
 
   output reg [`data_wdth - 1:0]         read_data,    // Coming from OCP bus
   /*}}}*/
