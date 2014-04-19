@@ -22,65 +22,56 @@
   <sourceproject xmlns="http://www.xilinx.com/XMLSchema" xil_pn:fileType="FILE_XISE" xil_pn:name="PCIe2OCP.xise"/>
 
   <files xmlns="http://www.xilinx.com/XMLSchema">
-    <file xil_pn:fileType="FILE_XMSGS" xil_pn:name="_xmsgs/xst.xmsgs"/>
-    <file xil_pn:fileType="FILE_XST_PROJECT" xil_pn:name="axi2ocp.prj"/>
-    <file xil_pn:fileType="FILE_XST_STX" xil_pn:name="axi2ocp.stx"/>
-    <file xil_pn:fileType="FILE_XST" xil_pn:name="axi2ocp.xst"/>
     <file xil_pn:fileType="FILE_XST_PROJECT" xil_pn:name="fifo_tb_beh.prj"/>
     <file xil_pn:branch="BehavioralSim" xil_pn:fileType="FILE_ISIM_EXE" xil_pn:name="fifo_tb_isim_beh.exe"/>
     <file xil_pn:fileType="FILE_ISIM_MISC" xil_pn:name="fifo_tb_isim_beh.wdb"/>
+    <file xil_pn:fileType="FILE_XST_PROJECT" xil_pn:name="fifo_tb_stx_beh.prj"/>
     <file xil_pn:fileType="FILE_LOG" xil_pn:name="fuse.log"/>
     <file xil_pn:fileType="FILE_DIRECTORY" xil_pn:name="isim"/>
     <file xil_pn:branch="BehavioralSim" xil_pn:fileType="FILE_CMD" xil_pn:name="isim.cmd"/>
     <file xil_pn:branch="BehavioralSim" xil_pn:fileType="FILE_LOG" xil_pn:name="isim.log"/>
     <file xil_pn:branch="BehavioralSim" xil_pn:fileType="FILE_INI" xil_pn:name="xilinxsim.ini"/>
-    <file xil_pn:fileType="FILE_DIRECTORY" xil_pn:name="xst"/>
   </files>
 
   <transforms xmlns="http://www.xilinx.com/XMLSchema">
-    <transform xil_pn:end_ts="1397889214" xil_pn:name="TRAN_copyInitialToAbstractSimulation" xil_pn:start_ts="1397889214">
-      <status xil_pn:value="SuccessfullyRun"/>
-    </transform>
-    <transform xil_pn:end_ts="1397889568" xil_pn:in_ck="-4085541104165788250" xil_pn:name="TRAN_copyAbstractToPostAbstractSimulation" xil_pn:start_ts="1397889568">
+    <transform xil_pn:end_ts="1397897785" xil_pn:name="TRAN_copyInitialToAbstractSimulation" xil_pn:start_ts="1397897785">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
-      <status xil_pn:value="OutOfDateForInputs"/>
-      <status xil_pn:value="InputAdded"/>
+    </transform>
+    <transform xil_pn:end_ts="1397900703" xil_pn:in_ck="-2791620465366824109" xil_pn:name="TRAN_copyAbstractToPostAbstractSimulation" xil_pn:start_ts="1397900703">
+      <status xil_pn:value="SuccessfullyRun"/>
+      <status xil_pn:value="ReadyToRun"/>
       <outfile xil_pn:name="../gen/FIFO.v"/>
       <outfile xil_pn:name="../src/bridge.v"/>
       <outfile xil_pn:name="../src/fifo_tb.v"/>
       <outfile xil_pn:name="../src/ocp_master_fsm.v"/>
+      <outfile xil_pn:name="../src/ocp_master_fsm_tb.v"/>
     </transform>
-    <transform xil_pn:end_ts="1397889214" xil_pn:name="TRAN_xawsToSimhdl" xil_pn:prop_ck="-6156968834092565392" xil_pn:start_ts="1397889214">
+    <transform xil_pn:end_ts="1397897785" xil_pn:name="TRAN_xawsToSimhdl" xil_pn:prop_ck="-6156968834092565392" xil_pn:start_ts="1397897785">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1397889214" xil_pn:name="TRAN_schematicsToHdlSim" xil_pn:prop_ck="-7890831541491707904" xil_pn:start_ts="1397889214">
+    <transform xil_pn:end_ts="1397897785" xil_pn:name="TRAN_schematicsToHdlSim" xil_pn:prop_ck="-7890831541491707904" xil_pn:start_ts="1397897785">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1397889214" xil_pn:name="TRAN_regenerateCoresSim" xil_pn:prop_ck="8885863829587886122" xil_pn:start_ts="1397889214">
+    <transform xil_pn:end_ts="1397897785" xil_pn:name="TRAN_regenerateCoresSim" xil_pn:prop_ck="8885863829587886122" xil_pn:start_ts="1397897785">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
-      <status xil_pn:value="OutOfDateForInputs"/>
-      <status xil_pn:value="InputAdded"/>
     </transform>
-    <transform xil_pn:end_ts="1397889568" xil_pn:in_ck="-4085541104165788250" xil_pn:name="TRAN_copyPostAbstractToPreSimulation" xil_pn:start_ts="1397889568">
+    <transform xil_pn:end_ts="1397900703" xil_pn:in_ck="-2791620465366824109" xil_pn:name="TRAN_copyPostAbstractToPreSimulation" xil_pn:start_ts="1397900703">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
-      <status xil_pn:value="OutOfDateForPredecessor"/>
       <outfile xil_pn:name="../gen/FIFO.v"/>
       <outfile xil_pn:name="../src/bridge.v"/>
       <outfile xil_pn:name="../src/fifo_tb.v"/>
       <outfile xil_pn:name="../src/ocp_master_fsm.v"/>
+      <outfile xil_pn:name="../src/ocp_master_fsm_tb.v"/>
     </transform>
-    <transform xil_pn:end_ts="1397889571" xil_pn:in_ck="-4085541104165788250" xil_pn:name="TRAN_ISimulateBehavioralModelRunFuse" xil_pn:prop_ck="36301503638132616" xil_pn:start_ts="1397889568">
+    <transform xil_pn:end_ts="1397900707" xil_pn:in_ck="-2791620465366824109" xil_pn:name="TRAN_ISimulateBehavioralModelRunFuse" xil_pn:prop_ck="36301503638132616" xil_pn:start_ts="1397900703">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
-      <status xil_pn:value="OutOfDateForInputs"/>
-      <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
-      <status xil_pn:value="InputAdded"/>
       <status xil_pn:value="OutputChanged"/>
       <outfile xil_pn:name="fifo_tb_beh.prj"/>
       <outfile xil_pn:name="fifo_tb_isim_beh.exe"/>
@@ -89,19 +80,12 @@
       <outfile xil_pn:name="isim.log"/>
       <outfile xil_pn:name="xilinxsim.ini"/>
     </transform>
-    <transform xil_pn:end_ts="1397889572" xil_pn:in_ck="-4985014181918149496" xil_pn:name="TRAN_ISimulateBehavioralModel" xil_pn:prop_ck="4933883596386891595" xil_pn:start_ts="1397889571">
+    <transform xil_pn:end_ts="1397900707" xil_pn:in_ck="-4985014181918149496" xil_pn:name="TRAN_ISimulateBehavioralModel" xil_pn:prop_ck="4933883596386891595" xil_pn:start_ts="1397900707">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
-      <status xil_pn:value="OutOfDateForPredecessor"/>
-      <status xil_pn:value="OutOfDateForOutputs"/>
-      <status xil_pn:value="OutputChanged"/>
       <outfile xil_pn:name="fifo_tb_isim_beh.wdb"/>
       <outfile xil_pn:name="isim.cmd"/>
       <outfile xil_pn:name="isim.log"/>
-    </transform>
-    <transform xil_pn:name="TRAN_SubProjectAbstractToPreProxy">
-      <status xil_pn:value="SuccessfullyRun"/>
-      <status xil_pn:value="ReadyToRun"/>
     </transform>
   </transforms>
 
