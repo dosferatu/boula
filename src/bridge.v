@@ -1,6 +1,6 @@
 `include "ocp_master_fsm.v"
-//`include "axi2ocp.v"
-//`include "../gen/FIFO.v"
+`include "axi2ocp.v"
+`include "../gen/FIFO.v"
 
 /*
  * PCIe 2.0 to OCP 2.2 bridge
@@ -102,19 +102,58 @@ module bridge(
 );
 
 // Declarations/*{{{*/
-  reg [`addr_wdth - 1:0]         OCP_ADDRESS_OUT;
-  reg [2:0]                      burst_seq;
-  reg                            burst_single_req;
-  reg [9:0]                      burst_length;
-  reg                            data_valid;
-  reg                            read_request;
-  reg                            reset;
-  reg [`data_wdth - 1:0]         TLP_DATA_IN;   // Coming from PCIe side
-  reg                            write_request;
-  reg                            writeresp_enable;
+  reg [2:0]                   burst_seq;
+  reg                         burst_single_req;
+  reg [9:0]                   burst_length;
+  reg                         data_valid;
+  reg                         read_request;
+  reg                         reset;
+  reg                         write_request;
+  reg                         writeresp_enable;
 
-  wire [`data_wdth - 1:0]         OCP_DATA_IN;    // Coming from OCP bus
-/*}}}*/
+  /*
+   * THIS NEEDS TO BE GROUPED NICELY SO IT DOESN'T SUCK TO READ
+   */
+
+  wire                        RX_AXI_CLK;
+  wire                        RX_OCP_CLK;
+  wire                        RX_SLAVE_AXI_FIFO_DATA_VALID;
+  wire                        RX_SLAVE_AXI_FIFO_DATA_READY;
+  wire [63:0]                 RX_SLAVE_AXI_FIFO_DATA;
+  wire [7:0]                  RX_SLAVE_AXI_FIFO_DATA_KEEP;
+  wire                        RX_SLAVE_AXI_FIFO_DATA_LAST;
+  wire                        RX_SLAVE_AXI_FIFO_OVERFLOW;
+  wire                        RX_SLAVE_AXI_FIFO_UNDERFLOW;
+
+  wire                        RX_MASTER_AXI_FIFO_DATA_VALID;
+  wire                        RX_MASTER_AXI_FIFO_DATA_READY;
+  wire [63:0]                 RX_MASTER_AXI_FIFO_DATA;
+  wire [7:0]                  RX_MASTER_AXI_FIFO_DATA_KEEP;
+  wire                        RX_MASTER_AXI_FIFO_DATA_LAST;
+  wire                        RX_MASTER_AXI_FIFO_OVERFLOW;
+  wire                        RX_MASTER_AXI_FIFO_UNDERFLOW;
+
+  wire [`addr_wdth - 1:0]     OCP_ADDRESS_OUT
+  wire                        OCP_ENABLE;
+  wire                        OCP_BURST_SEQ;
+  wire                        OCP_BURST_SINGLE_REQ;
+  wire                        OCP_BURST_LENGTH;
+  wire                        OCP_DATA_VALID;
+  wire                        OCP_DATA_IN;
+  wire                        OCP_DATA_OUT;
+  wire                        READ_REQUEST;
+  wire                        WRITE_REQUEST;
+  wire [`data_wdth - 1:0]     WRITE_DATA;
+  wire                        WRITE_RESPONSE_ENABLE;
+
+  wire                        RX_MASTER_OCP_FIFO_DATA_VALID;
+  wire                        RX_MASTER_OCP_FIFO_DATA_READY;
+  wire [63:0]                 RX_MASTER_OCP_FIFO_DATA;
+  wire [7:0]                  RX_MASTER_OCP_FIFO_DATA_KEEP;
+  wire                        RX_MASTER_OCP_FIFO_DATA_LAST;
+  wire                        RX_MASTER_OCP_FIFO_OVERFLOW;
+  wire                        RX_MASTER_OCP_FIFO_UNDERFLOW;
+    /*}}}*/
 
 // PCIe 2.0 Coregen module/*{{{*/
 PCIe P0 (
@@ -252,25 +291,65 @@ PCIe P0 (
 /*}}}*/
 
 // AXI to OCP bridge module/*{{{*/
-//axi2ocp B0(
-//);
+axi2ocp rx_bridge(
+  .clk(RX_OCP_CLK),
+  .reset(),
+
+  // AXI FIFO/*{{{*/
+  .m_aclk(RX_AXI_CLK),
+  .m_axis_tvalid(RX_SLAVE_AXI_FIFO_DATA_VALID),
+  .m_axis_tready(RX_SLAVE_AXI_FIFO_DATA_READY),
+  .m_axis_tdata(RX_SLAVE_AXI_FIFO_DATA),
+  .m_axis_tkeep(RX_SLAVE_AXI_FIFO_DATA_KEEP),
+  .m_axis_tlast(RX_SLAVE_AXI_FIFO_DATA_LAST),
+  .axis_overflow(RX_SLAVE_AXI_FIFO_OVERFLOW),
+  .axis_underflow(RX_SLAVE_AXI_FIFO_UNDERFLOW),
+  /*}}}*/
+  
+  // OCP 2.2 Interface/*{{{*/
+  .address(OCP_ADDRESS_OUT),
+  .enable(OCP_ENABLE),
+  .burst_seq(OCP_BURST_SEQ),
+  .burst_single_req(OCP_BURST_SINGLE_REQ),
+  .burst_length(OCP_BURST_LENGTH),
+  .data_valid(OCP_DATA_VALID),
+  .read_request(READ_REQUEST),
+  .reset(reset),
+  .sys_clk(),
+  .write_data(OCP_DATA_OUT),
+  .write_request(WRITE_REQUEST),
+  .writeresp_enable(WRITE_RESPONSE_ENABLE),
+  /*}}}*/
+
+  // Header FIFO output/*{{{*/
+  .s_aclk(RX_OCP_CLK),
+  .s_aresetn(reset),
+  .s_axis_tvalid(RX_MASTER_OCP_FIFO_DATA_VALID),
+  .s_axis_tready(RX_MASTER_OCP_FIFO_DATA_READY),
+  .s_axis_tdata(RX_MASTER_OCP_FIFO_DATA),
+  .s_axis_tkeep(RX_MASTER_OCP_FIFO_DATA_KEEP),
+  .s_axis_tlast(RX_MASTER_OCP_FIFO_DATA_LAST),
+  .axis_overflow(RX_MASTER_OCP_FIFO_OVERFLOW),
+  .axis_underflow(RX_MASTER_OCP_FIFO_UNDERFLOW)
+  /*}}}*/
+);
 /*}}}*/
 
 // OCP master controller/*{{{*/
-ocp_master_fsm O0(
+ocp_master_fsm ocp_interface(
   .address(OCP_ADDRESS_OUT),                // Bridge interface
-  .enable(enable),
-  .burst_seq(burst_seq),
-  .burst_single_req(burst_single_req),
-  .burst_length(burst_length),
-  .data_valid(data_valid),
+  .enable(OCP_ENABLE),
+  .burst_seq(OCP_BURST_SEQ),
+  .burst_single_req(OCP_BURST_SINGLE_REQ),
+  .burst_length(OCP_BURST_LENGTH),
+  .data_valid(OCP_DATA_VALID),
   .read_data(OCP_DATA_IN),
-  .read_request(read_request),
+  .read_request(READ_REQUEST),
   .reset(reset),
-  .sys_clk(sys_clk),
-  .write_data(TLP_DATA_IN),
-  .write_request(write_request),
-  .writeresp_enable(writeresp_enable),
+  .sys_clk(RX_OCP_CLK),
+  .write_data(OCP_DATA_OUT),
+  .write_request(WRITE_REQUEST),
+  .writeresp_enable(WRITE_RESPONSE_ENABLE),
 
   .Clk(Clk),                                // Basic group
   .EnableClk(EnableClk),
@@ -307,24 +386,68 @@ ocp_master_fsm O0(
 );
 /*}}}*/
 
-// FIFO for the TLP header information/*{{{*/
-//FIFO header_fifo (
-  //.m_aclk(m_aclk), // input m_aclk
-  //.s_aclk(s_aclk), // input s_aclk
-  //.s_aresetn(s_aresetn), // input s_aresetn
-  //.s_axis_tvalid(s_axis_tvalid), // input s_axis_tvalid
-  //.s_axis_tready(s_axis_tready), // output s_axis_tready
-  //.s_axis_tdata(s_axis_tdata), // input [63 : 0] s_axis_tdata
-  //.s_axis_tkeep(s_axis_tkeep), // input [7 : 0] s_axis_tkeep
-  //.s_axis_tlast(s_axis_tlast), // input s_axis_tlast
-  //.m_axis_tvalid(m_axis_tvalid), // output m_axis_tvalid
-  //.m_axis_tready(m_axis_tready), // input m_axis_tready
-  //.m_axis_tdata(m_axis_tdata), // output [63 : 0] m_axis_tdata
-  //.m_axis_tkeep(m_axis_tkeep), // output [7 : 0] m_axis_tkeep
-  //.m_axis_tlast(m_axis_tlast), // output m_axis_tlast
-  //.axis_overflow(axis_overflow), // output axis_overflow
-  //.axis_underflow(axis_underflow) // output axis_underflow
-//);
+/*
+ * FINISH WIRING THE FIFOS TO WHERE THEY NEED TO GO FOR THE RX SIDE
+ */
+
+// FIFO instantiations/*{{{*/
+
+// AXI FIFO for the Rx side of the bridge
+FIFO axi_rx_fifo (
+  .m_aclk(RX_AXI_CLK),
+  .s_aclk(RX_AXI_CLK),
+  .s_aresetn(reset),
+  .s_axis_tvalid(s_axis_tvalid),
+  .s_axis_tready(s_axis_tready),
+  .s_axis_tdata(s_axis_tdata),
+  .s_axis_tkeep(s_axis_tkeep),
+  .s_axis_tlast(s_axis_tlast),
+  .m_axis_tvalid(m_axis_tvalid),
+  .m_axis_tready(m_axis_tready),
+  .m_axis_tdata(m_axis_tdata),
+  .m_axis_tkeep(m_axis_tkeep),
+  .m_axis_tlast(m_axis_tlast),
+  .axis_overflow(RX_MASTER_AXI_FIFO_OVERFLOW),
+  .axis_underflow(RX_MASTER_AXI_FIFO_UNDERFLOW)
+);
+
+// FIFO for the data coming from the OCP bus
+FIFO ocp_fifo (
+  .m_aclk(RX_AXI_CLK),
+  .s_aclk(RX_OCP_CLK),
+  .s_aresetn(reset),
+  .s_axis_tvalid(s_axis_tvalid),
+  .s_axis_tready(s_axis_tready),
+  .s_axis_tdata(s_axis_tdata),
+  .s_axis_tkeep(s_axis_tkeep),
+  .s_axis_tlast(s_axis_tlast),
+  .m_axis_tvalid(m_axis_tvalid),
+  .m_axis_tready(m_axis_tready),
+  .m_axis_tdata(m_axis_tdata),
+  .m_axis_tkeep(m_axis_tkeep),
+  .m_axis_tlast(m_axis_tlast),
+  .axis_overflow(axis_overflow),
+  .axis_underflow(axis_underflow)
+);
+
+// FIFO for the TLP header information
+FIFO header_fifo (
+  .m_aclk(m_aclk),
+  .s_aclk(s_aclk),
+  .s_aresetn(s_aresetn),
+  .s_axis_tvalid(s_axis_tvalid),
+  .s_axis_tready(s_axis_tready),
+  .s_axis_tdata(s_axis_tdata),
+  .s_axis_tkeep(s_axis_tkeep),
+  .s_axis_tlast(s_axis_tlast),
+  .m_axis_tvalid(m_axis_tvalid),
+  .m_axis_tready(m_axis_tready),
+  .m_axis_tdata(m_axis_tdata),
+  .m_axis_tkeep(m_axis_tkeep),
+  .m_axis_tlast(m_axis_tlast),
+  .axis_overflow(axis_overflow),
+  .axis_underflow(axis_underflow)
+);
 /*}}}*/
 
 endmodule
