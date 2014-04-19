@@ -1,6 +1,6 @@
 `include "ocp_master_fsm.v"
 `include "axi2ocp.v"
-`include "../gen/FIFO.v"
+//`include "../gen/FIFO.v"
 
 /*
  * PCIe 2.0 to OCP 2.2 bridge
@@ -108,6 +108,7 @@ module bridge(
   reg                         data_valid;
   reg                         read_request;
   reg                         reset;
+  wire                       ocp_reset;
   reg                         write_request;
   reg                         writeresp_enable;
 
@@ -156,7 +157,7 @@ module bridge(
     /*}}}*/
 
 // PCIe 2.0 Coregen module/*{{{*/
-PCIe P0 (
+PCIe pcie (
 
   //-------------------------------------------------------
   // 1. PCI Express (pci_exp) Interface
@@ -303,7 +304,6 @@ axi2ocp rx_bridge(
   .m_axis_tkeep(RX_SLAVE_AXI_FIFO_DATA_KEEP),
   .m_axis_tlast(RX_SLAVE_AXI_FIFO_DATA_LAST),
   .axis_overflow(RX_SLAVE_AXI_FIFO_OVERFLOW),
-  .axis_underflow(RX_SLAVE_AXI_FIFO_UNDERFLOW),
   /*}}}*/
   
   // OCP 2.2 Interface/*{{{*/
@@ -314,7 +314,7 @@ axi2ocp rx_bridge(
   .burst_length(OCP_BURST_LENGTH),
   .data_valid(OCP_DATA_VALID),
   .read_request(READ_REQUEST),
-  .ocp_reset(reset),
+  .ocp_reset(ocp_reset),
   .sys_clk(),
   .write_data(OCP_DATA_OUT),
   .write_request(WRITE_REQUEST),
@@ -323,14 +323,13 @@ axi2ocp rx_bridge(
 
   // Header FIFO output/*{{{*/
   .s_aclk(RX_OCP_CLK),
-  .s_aresetn(reset),
+  .s_aresetn(ocp_reset),
   .s_axis_tvalid(RX_MASTER_OCP_FIFO_DATA_VALID),
   .s_axis_tready(RX_MASTER_OCP_FIFO_DATA_READY),
   .s_axis_tdata(RX_MASTER_OCP_FIFO_DATA),
   .s_axis_tkeep(RX_MASTER_OCP_FIFO_DATA_KEEP),
   .s_axis_tlast(RX_MASTER_OCP_FIFO_DATA_LAST),
-  .axis_overflow(RX_MASTER_OCP_FIFO_OVERFLOW),
-  .axis_underflow(RX_MASTER_OCP_FIFO_UNDERFLOW)
+  .axis_underflow(RX_SLAVE_AXI_FIFO_UNDERFLOW)
   /*}}}*/
 );
 /*}}}*/
