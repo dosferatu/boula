@@ -4,6 +4,6 @@ SET device = xc6vlx75t
 SET devicefamily = virtex6
 SET flowvendor = Other
 SET package = ff484
-SET speedgrade = -3
+SET speedgrade = -1
 SET verilogsim = true
 SET vhdlsim = false

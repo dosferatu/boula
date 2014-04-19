@@ -1,6 +1,6 @@
 `include "ocp_master_fsm.v"
-`include "axi2ocp.v"
-`include "../gen/PCIe.v"
+//`include "axi2ocp.v"
+//`include "../gen/FIFO.v"
 
 /*
  * PCIe 2.0 to OCP 2.2 bridge
@@ -252,8 +252,8 @@ PCIe P0 (
 /*}}}*/
 
 // AXI to OCP bridge module/*{{{*/
-axi2ocp B0(
-);
+//axi2ocp B0(
+//);
 /*}}}*/
 
 // OCP master controller/*{{{*/
@@ -306,4 +306,25 @@ ocp_master_fsm O0(
   .SRespRowLast(SRespRowLast)
 );
 /*}}}*/
+
+// FIFO for the TLP header information/*{{{*/
+//FIFO header_fifo (
+  //.m_aclk(m_aclk), // input m_aclk
+  //.s_aclk(s_aclk), // input s_aclk
+  //.s_aresetn(s_aresetn), // input s_aresetn
+  //.s_axis_tvalid(s_axis_tvalid), // input s_axis_tvalid
+  //.s_axis_tready(s_axis_tready), // output s_axis_tready
+  //.s_axis_tdata(s_axis_tdata), // input [63 : 0] s_axis_tdata
+  //.s_axis_tkeep(s_axis_tkeep), // input [7 : 0] s_axis_tkeep
+  //.s_axis_tlast(s_axis_tlast), // input s_axis_tlast
+  //.m_axis_tvalid(m_axis_tvalid), // output m_axis_tvalid
+  //.m_axis_tready(m_axis_tready), // input m_axis_tready
+  //.m_axis_tdata(m_axis_tdata), // output [63 : 0] m_axis_tdata
+  //.m_axis_tkeep(m_axis_tkeep), // output [7 : 0] m_axis_tkeep
+  //.m_axis_tlast(m_axis_tlast), // output m_axis_tlast
+  //.axis_overflow(axis_overflow), // output axis_overflow
+  //.axis_underflow(axis_underflow) // output axis_underflow
+//);
+/*}}}*/
+
 endmodule
