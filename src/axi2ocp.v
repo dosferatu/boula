@@ -109,8 +109,8 @@ localparam STRM  = 3'b101;   // Streaming
 localparam UNKN  = 3'b110;   // Unknown
 localparam BLCK  = 3'b111;   // 2-dimensional Block
 
-reg [1:0] state;
-reg [1:0] next;
+reg [3:0] state;
+reg [3:0] next;
 
 reg [1:0] counter;
 
@@ -128,7 +128,7 @@ reg [63:0] header_3;
 // State transition logic/*{{{*/
 always @(posedge clk) begin
   if (reset) begin
-    state <= 2'b0;
+    state <= 4'b0;
     state[IDLE] <= 1'b1;
   end
 
@@ -140,7 +140,7 @@ end
 
 // Next state logic/*{{{*/
 always @(state) begin
-  next <= 2'b0;
+  next <= 4'b0;
 
   case (1'b1)
     state[IDLE]: begin
