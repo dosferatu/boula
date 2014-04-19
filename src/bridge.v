@@ -133,7 +133,7 @@ module bridge(
   wire                        RX_MASTER_AXI_FIFO_OVERFLOW;
   wire                        RX_MASTER_AXI_FIFO_UNDERFLOW;
 
-  wire [`addr_wdth - 1:0]     OCP_ADDRESS_OUT
+  wire [`addr_wdth - 1:0]     OCP_ADDRESS_OUT;
   wire                        OCP_ENABLE;
   wire                        OCP_BURST_SEQ;
   wire                        OCP_BURST_SINGLE_REQ;
@@ -314,7 +314,7 @@ axi2ocp rx_bridge(
   .burst_length(OCP_BURST_LENGTH),
   .data_valid(OCP_DATA_VALID),
   .read_request(READ_REQUEST),
-  .reset(reset),
+  .ocp_reset(reset),
   .sys_clk(),
   .write_data(OCP_DATA_OUT),
   .write_request(WRITE_REQUEST),
