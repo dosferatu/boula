@@ -1,6 +1,5 @@
 `include "ocp_master_fsm.v"
 `include "axi2ocp.v"
-//`include "../gen/FIFO.v"
 
 /*
  * PCIe 2.0 to OCP 2.2 bridge

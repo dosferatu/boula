@@ -14,7 +14,7 @@ cp xilinx_pcie_2_0_ep_v6.log xst.srp
 cd results
 
 echo 'Running ngdbuild'
-ngdbuild -verbose -uc ../../example_design/xilinx_pcie_2_0_ep_v6_01_lane_gen1_xc6vlx75t-ff484-3-PCIE_X0Y0.ucf xilinx_pcie_2_0_ep_v6.ngc -sd .
+ngdbuild -verbose -uc ../../example_design/xilinx_pcie_2_0_ep_v6_01_lane_gen1_xc6vlx75t-ff484-1-PCIE_X0Y0.ucf xilinx_pcie_2_0_ep_v6.ngc -sd .
 
 
 echo 'Running map'

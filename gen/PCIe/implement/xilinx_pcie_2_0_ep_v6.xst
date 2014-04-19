@@ -1,5 +1,5 @@
 run
--p xc6vlx75t-ff484-3
+-p xc6vlx75t-ff484-1
 -ifn xilinx_pcie_2_0_ep_v6.prj
 -ifmt VERILOG
 -ofn xilinx_pcie_2_0_ep_v6.ngc

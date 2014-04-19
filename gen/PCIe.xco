@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Wed Apr 16 01:56:03 2014
+# Date: Sat Apr 19 12:14:43 2014
 #
 ##############################################################
 #
@@ -31,7 +31,7 @@ SET implementationfiletype = Ngc
 SET package = ff484
 SET removerpms = false
 SET simulationfiles = Behavioral
-SET speedgrade = -3
+SET speedgrade = -1
 SET verilogsim = true
 SET vhdlsim = false
 # END Project Options
@@ -205,4 +205,4 @@ CSET xlnx_ref_board=None
 MISC pkg_timestamp=2013-10-13T18:30:52Z
 # END Extra information
 GENERATE
-# CRC: 9fa85c34
+# CRC: 7de6eb10

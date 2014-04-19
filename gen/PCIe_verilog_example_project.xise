@@ -90,7 +90,7 @@
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="PCIe/example_design/xilinx_pcie_2_0_ep_v6_01_lane_gen1_xc6vlx75t-ff484-3-PCIE_X0Y0.ucf" xil_pn:type="FILE_UCF">
+    <file xil_pn:name="PCIe/example_design/xilinx_pcie_2_0_ep_v6_01_lane_gen1_xc6vlx75t-ff484-1-PCIE_X0Y0.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation"/>
     </file>
     <file xil_pn:name="PCIe/source/axi_basic_rx.v" xil_pn:type="FILE_VERILOG">
@@ -241,7 +241,7 @@
   <properties>
     <property xil_pn:name="Device Family" xil_pn:value="Virtex6" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Device" xil_pn:value="xc6vlx75t" xil_pn:valueState="non-default"/>
-    <property xil_pn:name="Device Speed Grade/Select ABS Minimum" xil_pn:value="-3" xil_pn:valueState="default"/>
+    <property xil_pn:name="Device Speed Grade/Select ABS Minimum" xil_pn:value="-1" xil_pn:valueState="default"/>
     <property xil_pn:name="Implementation Top" xil_pn:value="Module|xilinx_pcie_2_0_ep_v6" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Implementation Top File" xil_pn:value="PCIe/example_design/xilinx_pcie_2_0_ep_v6.v" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Implementation Top Instance Path" xil_pn:value="PCIe/xilinx_pcie_2_0_ep_v6" xil_pn:valueState="non-default"/>

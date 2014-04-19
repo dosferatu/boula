@@ -1,5 +1,3 @@
-`include "../gen/FIFO.v"
-
 module fifo_tb();
 // Declarations/*{{{*/
 // Slave side
