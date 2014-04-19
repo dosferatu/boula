@@ -166,30 +166,30 @@ module ocp_master_fsm(
 // OCP 2.2 Encodings/*{{{*/
 
 // MCmd encoding
-parameter IDLE  = 3'b000;
-parameter WR    = 3'b001;
-parameter RD    = 3'b010;
-parameter RDEX  = 3'b011;
-parameter RDL   = 3'b100;
-parameter WRNP  = 3'b101;
-parameter WRC   = 3'b110;
-parameter BCST  = 3'b111;
+localparam IDLE  = 3'b000;
+localparam WR    = 3'b001;
+localparam RD    = 3'b010;
+localparam RDEX  = 3'b011;
+localparam RDL   = 3'b100;
+localparam WRNP  = 3'b101;
+localparam WRC   = 3'b110;
+localparam BCST  = 3'b111;
 
 // SResp encoding
-parameter NULL  = 2'b00;
-parameter DVA   = 2'b01;
-parameter FAIL  = 2'b10;
-parameter ERR   = 2'b11;
+localparam NULL  = 2'b00;
+localparam DVA   = 2'b01;
+localparam FAIL  = 2'b10;
+localparam ERR   = 2'b11;
 
 // MBurstSeq encoding
-parameter INCR  = 3'b000;   // Incrementing
-parameter DFLT1 = 3'b001;   // Custom (packed)
-parameter WRAP  = 3'b010;   // Wrapping
-parameter DFLT2 = 3'b011;   // Custom (not packed)
-parameter XOR   = 3'b100;   // Exclusive OR
-parameter STRM  = 3'b101;   // Streaming
-parameter UNKN  = 3'b110;   // Unknown
-parameter BLCK  = 3'b111;   // 2-dimensional Block
+localparam INCR  = 3'b000;   // Incrementing
+localparam DFLT1 = 3'b001;   // Custom (packed)
+localparam WRAP  = 3'b010;   // Wrapping
+localparam DFLT2 = 3'b011;   // Custom (not packed)
+localparam XOR   = 3'b100;   // Exclusive OR
+localparam STRM  = 3'b101;   // Streaming
+localparam UNKN  = 3'b110;   // Unknown
+localparam BLCK  = 3'b111;   // 2-dimensional Block
 
 // MConnect encoding (master connection state)
 //parameter M_OFF   = 2'b00;  // Not connected
