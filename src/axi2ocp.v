@@ -72,7 +72,7 @@ module axi2ocp(
   output reg [9:0]                      burst_length,
   output reg                            data_valid,
   output reg                            read_request,
-  output reg                            reset,
+  output reg                            ocp_reset,
   output reg                            sys_clk,
   output reg [`data_wdth - 1:0]         write_data,
   output reg                            write_request,
@@ -214,7 +214,7 @@ always @(posedge clk) begin
     burst_length        <= 1'b1;
     data_valid          <= 1'b0;
     read_request        <= 1'b0;
-    reset               <= 1'b0;
+    ocp_reset           <= 1'b0;
     sys_clk             <= 1'b0;
     write_data          <= {`data_wdth{1'b0}};
     write_request       <= 1'b0;
@@ -257,7 +257,7 @@ always @(posedge clk) begin
         burst_length        <= 1'b1;
         data_valid          <= 1'b0;
         read_request        <= 1'b0;
-        reset               <= 1'b0;
+        ocp_reset           <= 1'b0;
         sys_clk             <= 1'b0;
         write_data          <= {`data_wdth{1'b0}};
         write_request       <= 1'b0;
@@ -298,7 +298,7 @@ always @(posedge clk) begin
         burst_length        <= 1'b1;
         data_valid          <= 1'b0;
         read_request        <= 1'b0;
-        reset               <= 1'b0;
+        ocp_reset           <= 1'b0;
         sys_clk             <= 1'b0;
         write_data          <= {`data_wdth{1'b0}};
         write_request       <= 1'b0;
@@ -339,7 +339,7 @@ always @(posedge clk) begin
         burst_length        <= 1'b1;
         data_valid          <= 1'b0;
         read_request        <= 1'b0;
-        reset               <= 1'b0;
+        ocp_reset           <= 1'b0;
         sys_clk             <= 1'b0;
         write_data          <= {`data_wdth{1'b0}};
         write_request       <= 1'b0;
@@ -380,7 +380,7 @@ always @(posedge clk) begin
         burst_length        <= 1'b1;
         data_valid          <= 1'b0;
         read_request        <= 1'b0;
-        reset               <= 1'b0;
+        ocp_reset           <= 1'b0;
         sys_clk             <= 1'b0;
         write_data          <= {`data_wdth{1'b0}};
         write_request       <= 1'b0;
@@ -421,7 +421,7 @@ always @(posedge clk) begin
         burst_length        <= 1'b1;
         data_valid          <= 1'b0;
         read_request        <= 1'b0;
-        reset               <= 1'b0;
+        ocp_reset           <= 1'b0;
         sys_clk             <= 1'b0;
         write_data          <= {`data_wdth{1'b0}};
         write_request       <= 1'b0;
