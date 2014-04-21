@@ -96,8 +96,7 @@ module axi2ocp(
 // State encodings
 localparam IDLE   = 2'b00;
 localparam PROC   = 2'b01;
-localparam DATA   = 2'b10;
-localparam EXEC   = 2'b11;
+localparam EXEC   = 2'b10;
 
 // MBurstSeq encoding for OCP 2.2
 localparam INCR  = 3'b000;   // Incrementing
@@ -116,6 +115,10 @@ reg [1:0] counter;
 
 /*
  * NEED TO MUX IN TO THESE FOR SELECTION WHEN CALCULATING OUTPUTS
+ *
+ * Each stage in the PROC state we will use a counter set from the info
+ * from the first header packet telling us how many total header packets
+ * in order to know how many registers (maximum 4) to concatenate.
  */
 reg [63:0] header_0;
 reg [63:0] header_1;
@@ -154,29 +157,23 @@ always @(state) begin
     end
 
     state[PROC]: begin
-      if (counter > 0) begin
+      if (counter) begin
         next[PROC] <= 1'b1;   // Header slices left to process
       end
 
-      // Need to check header if data is present and decide to go to DATA or
-        // EXEC
       else begin
-        next[DATA] <= 1'b1;   // Ready to gather data from AXI FIFO if present
+        next[EXEC] <= 1'b1;   // Ready to present the request to the OCP bus
       end
     end
 
-    state[DATA]: begin
-      if (m_axis_tlast) begin
-        next[EXEC] <= 1'b1;   // Ready to write data to OCP bus
-      end
-
-      else begin
-        next[DATA] <= 1'b1;   // Still data left in the FIFO for us to gather
-      end
-    end
-
-    // Wait until OCP bus is ready
     state[EXEC]: begin
+      if (m_axis_tlast | ~counter) begin
+        next[IDLE] <= 1'b1;   // We've either written the last data, or requested the last read
+      end
+
+      else begin
+        next[EXEC] <= 1'b1;   // Still data left in the FIFO for us to gather
+      end
     end
 
     default: begin
@@ -274,47 +271,6 @@ always @(posedge clk) begin
 
       // PROC/*{{{*/
       next[PROC]: begin
-        // FIFO lines/*{{{*/
-
-        // AXI FIFO input
-        m_aclk              <= 1'b0;
-        m_axis_tready       <= 1'b0;
-
-        // Header FIFO output
-        s_aclk              <= 1'b0;
-        s_aresetn           <= 1'b0;
-        s_axis_tvalid       <= 1'b0;
-        s_axis_tdata        <= 64'bx;
-        s_axis_tkeep        <= 8'b0;
-        s_axis_tlast        <= 1'b0;
-        /*}}}*/
-
-        // OCP 2.2 Interface/*{{{*/
-
-        address             <= {`addr_wdth{1'b0}};
-        enable              <= 1'b1;
-        burst_seq           <= INCR;
-        burst_single_req    <= 1'b0;
-        burst_length        <= 1'b1;
-        data_valid          <= 1'b0;
-        read_request        <= 1'b0;
-        ocp_reset           <= 1'b0;
-        sys_clk             <= 1'b0;
-        write_data          <= {`data_wdth{1'b0}};
-        write_request       <= 1'b0;
-        writeresp_enable    <= 1'b0;
-        /*}}}*/
-
-        counter <= 2'b0;
-        header_0 <= 64'b0;
-        header_1 <= 64'b0;
-        header_2 <= 64'b0;
-        header_3 <= 64'b0;
-      end
-      /*}}}*/
-
-      // DATA/*{{{*/
-      next[DATA]: begin
         // FIFO lines/*{{{*/
 
         // AXI FIFO input
