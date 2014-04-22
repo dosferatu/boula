@@ -1,3 +1,5 @@
+//`include "multiplexor.v"
+
 /*
  * AXI to OCP translation block
  * Author: Michael Walton
@@ -76,27 +78,17 @@ module axi2ocp(
   output reg                            sys_clk,
   output reg [`data_wdth - 1:0]         write_data,
   output reg                            write_request,
-  output reg                            writeresp_enable,
-  /*}}}*/
-
-  // Header FIFO output/*{{{*/
-  output reg s_aclk, // input s_aclk
-  output reg s_aresetn, // input s_aresetn
-  output reg s_axis_tvalid, // input s_axis_tvalid
-  input wire s_axis_tready, // output s_axis_tready
-  output reg [63:0] s_axis_tdata, // input [63 : 0] s_axis_tdata
-  output reg [7:0] s_axis_tkeep, // input [7 : 0] s_axis_tkeep
-  output reg s_axis_tlast, // input s_axis_tlast
-  input wire axis_underflow // output axis_underflow
+  output reg                            writeresp_enable
   /*}}}*/
 );
 
 // Declarations/*{{{*/
 
 // State encodings
-localparam IDLE   = 2'b00;
-localparam PROC   = 2'b01;
-localparam EXEC   = 2'b10;
+localparam IDLE     = 2'b00;
+localparam REQUEST  = 2'b01;
+localparam PROC     = 2'b10;
+localparam EXEC     = 2'b11;
 
 // MBurstSeq encoding for OCP 2.2
 localparam INCR  = 3'b000;   // Incrementing
@@ -108,10 +100,17 @@ localparam STRM  = 3'b101;   // Streaming
 localparam UNKN  = 3'b110;   // Unknown
 localparam BLCK  = 3'b111;   // 2-dimensional Block
 
+// Format encoding for PCI Express 2.0
+localparam MRD    = 3'b000; // 3DW header, no data
+localparam MRDLK  = 3'b001; // 4DW header, no data
+localparam MWR    = 3'b010; // 3DW header, with data
+localparam MWR2   = 3'b011; // 4DW header, with data
+localparam PRFX   = 3'b100; // TLP Prefix
+
 reg [3:0] state;
 reg [3:0] next;
 
-reg [1:0] counter;
+// Translation registers
 
 /*
  * NEED TO MUX IN TO THESE FOR SELECTION WHEN CALCULATING OUTPUTS
@@ -120,13 +119,19 @@ reg [1:0] counter;
  * from the first header packet telling us how many total header packets
  * in order to know how many registers (maximum 4) to concatenate.
  */
-reg [63:0] header_0;
-reg [63:0] header_1;
-reg [63:0] header_2;
-reg [63:0] header_3;
+reg [63:0] tlp_header_0;
+reg [63:0] tlp_header_1;
+reg [63:0] tlp_header_2;
+reg [63:0] tlp_header_3;
+
+reg [2:0] tlp_format;
+reg [4:0] tlp_type;
+
+reg [1:0] header_counter;
+reg [9:0] data_counter;
+reg [1:0] tlp_header_length;
+reg [9:0] tlp_data_length;
 /*}}}*/
-
-
 
 // State transition logic/*{{{*/
 always @(posedge clk) begin
@@ -148,16 +153,20 @@ always @(state) begin
   case (1'b1)
     state[IDLE]: begin
       if (m_axis_tvalid) begin
-        next[PROC] <= 1'b1;   // Data is in the AXI FIFO for us
+        next[REQUEST] <= 1'b1;   // Data is in the AXI FIFO for us
       end
-
+      
       else begin
         next[IDLE] <= 1'b1;
       end
+      end
+
+    state[REQUEST]: begin
+      next[PROC] <= 1'b1;     // Calculate the request type
     end
 
     state[PROC]: begin
-      if (counter) begin
+      if (header_counter == tlp_header_length) begin
         next[PROC] <= 1'b1;   // Header slices left to process
       end
 
@@ -167,7 +176,7 @@ always @(state) begin
     end
 
     state[EXEC]: begin
-      if (m_axis_tlast | ~counter) begin
+      if (m_axis_tlast | (data_counter == tlp_data_length)) begin
         next[IDLE] <= 1'b1;   // We've either written the last data, or requested the last read
       end
 
@@ -187,20 +196,9 @@ end
 always @(posedge clk) begin
   // RESET/*{{{*/
   if (reset) begin
-    // FIFO lines/*{{{*/
-    
     // AXI FIFO input
     m_aclk              <= 1'b0;
     m_axis_tready       <= 1'b0;
-
-    // Header FIFO output
-    s_aclk              <= 1'b0;
-    s_aresetn           <= 1'b0;
-    s_axis_tvalid       <= 1'b0;
-    s_axis_tdata        <= 64'bx;
-    s_axis_tkeep        <= 8'b0;
-    s_axis_tlast        <= 1'b0;
-    /*}}}*/
 
     // OCP 2.2 Interface/*{{{*/
     
@@ -218,32 +216,67 @@ always @(posedge clk) begin
     writeresp_enable    <= 1'b0;
     /*}}}*/
 
-    counter <= 2'b0;
-    header_0 <= 64'b0;
-    header_1 <= 64'b0;
-    header_2 <= 64'b0;
-    header_3 <= 64'b0;
+    // Bridge internals/*{{{*/
+
+    header_counter <= 2'b0;
+    data_counter <= 2'b0;
+    tlp_data_length <= 10'b0;
+    tlp_format <= 3'b0;
+    tlp_header_length <= 2'b0;
+    tlp_type <= 5'b0;
+    tlp_header_0 <= 64'b0;
+    tlp_header_1 <= 64'b0;
+    tlp_header_2 <= 64'b0;
+    tlp_header_3 <= 64'b0;
   end
-/*}}}*/
+  /*}}}*/
+  /*}}}*/
 
   else begin
     case (1'b1)
       // IDLE/*{{{*/
       next[IDLE]: begin
-        // FIFO lines/*{{{*/
-
         // AXI FIFO input
         m_aclk              <= 1'b0;
         m_axis_tready <= 1'b1;  // Notify the AXI FIFO we are ready for more data
 
-        // Header FIFO output
-        s_aclk              <= 1'b0;
-        s_aresetn           <= 1'b0;
-        s_axis_tvalid       <= 1'b0;
-        s_axis_tdata        <= 64'bx;
-        s_axis_tkeep        <= 8'b0;
-        s_axis_tlast        <= 1'b0;
+        // OCP 2.2 Interface/*{{{*/
+
+        address             <= {`addr_wdth{1'b0}};
+        enable              <= 1'b1;
+        burst_seq           <= INCR;
+        burst_single_req    <= 1'b0;
+        burst_length        <= 1'b1;
+        data_valid          <= 1'b0;
+        read_request        <= 1'b0;
+        ocp_reset           <= 1'b0;
+        sys_clk             <= 1'b0;
+        write_data          <= {`data_wdth{1'b0}};
+        write_request       <= 1'b0;
+        writeresp_enable    <= 1'b0;
         /*}}}*/
+
+        // Bridge internals/*{{{*/
+        
+        header_counter <= 2'b0;
+        data_counter <= 2'b0;
+        tlp_data_length <= 10'b0;
+        tlp_format <= 3'b0;
+        tlp_header_length <= 2'b0;
+        tlp_type <= 5'b0;
+        tlp_header_0 <= 64'b0;
+        tlp_header_1 <= 64'b0;
+        tlp_header_2 <= 64'b0;
+        tlp_header_3 <= 64'b0;
+      end
+      /*}}}*/
+      /*}}}*/
+
+      // REQUEST/*{{{*/
+      next[REQUEST]: begin
+        // AXI FIFO input
+        m_aclk              <= 1'b0;
+        m_axis_tready <= 1'b0;  // Notify the AXI FIFO we are ready for more data
 
         // OCP 2.2 Interface/*{{{*/
 
@@ -261,33 +294,55 @@ always @(posedge clk) begin
         writeresp_enable    <= 1'b0;
         /*}}}*/
 
-        counter <= 2'b0;
-        header_0 <= 64'b0;
-        header_1 <= 64'b0;
-        header_2 <= 64'b0;
-        header_3 <= 64'b0;
+        // Bridge internals/*{{{*/
+        
+        case(m_axis_tdata[7:5])
+          MRD: begin
+            tlp_header_length <= 2'b10;
+          end
+
+          MRDLK: begin
+            tlp_header_length <= 2'b11;
+          end
+
+          MWR: begin
+            tlp_header_length <= 2'b10;
+          end
+
+          MWR2: begin
+            tlp_header_length <= 2'b11;
+          end
+
+          PRFX: begin
+            tlp_header_length <= 2'b10;
+          end
+
+          default: begin
+            tlp_header_length <= 2'b0;
+          end
+        endcase
+        
+        data_counter <= 10'b0;
+        header_counter <= 2'b0;
+        tlp_data_length <= m_axis_tdata[31:24];
+        tlp_format <= m_axis_tdata[7:5];
+        tlp_type <= m_axis_tdata[4:0];
+        tlp_header_0 <= m_axis_tdata;
+        tlp_header_1 <= 64'b0;
+        tlp_header_2 <= 64'b0;
+        tlp_header_3 <= 64'b0;
       end
+      /*}}}*/
       /*}}}*/
 
       // PROC/*{{{*/
       next[PROC]: begin
-        // FIFO lines/*{{{*/
-
         // AXI FIFO input
-        m_aclk              <= 1'b0;
-        m_axis_tready       <= 1'b0;
-
-        // Header FIFO output
-        s_aclk              <= 1'b0;
-        s_aresetn           <= 1'b0;
-        s_axis_tvalid       <= 1'b0;
-        s_axis_tdata        <= 64'bx;
-        s_axis_tkeep        <= 8'b0;
-        s_axis_tlast        <= 1'b0;
-        /*}}}*/
+        //m_aclk              <= 1'b0;
+        m_axis_tready       <= 1'b1;
 
         // OCP 2.2 Interface/*{{{*/
-
+        
         address             <= {`addr_wdth{1'b0}};
         enable              <= 1'b1;
         burst_seq           <= INCR;
@@ -302,30 +357,74 @@ always @(posedge clk) begin
         writeresp_enable    <= 1'b0;
         /*}}}*/
 
-        counter <= 2'b0;
-        header_0 <= 64'b0;
-        header_1 <= 64'b0;
-        header_2 <= 64'b0;
-        header_3 <= 64'b0;
+        // Bridge internals/*{{{*/
+        
+        data_counter <= 10'b0;
+        header_counter <= m_axis_tvalid ? header_counter + 1'b1 : data_counter;
+        tlp_data_length <= tlp_data_length;
+        tlp_format <= m_axis_tdata[7:5];
+        tlp_header_length <= tlp_header_length;
+        tlp_type <= m_axis_tdata[4:0];
+        tlp_header_0 <= m_axis_tdata;
+
+        /*
+         * Assign the next header packet if FIFO has valid data.
+         * If there's no valid data ready then do nothing.
+         */
+        if (m_axis_tvalid) begin
+          case (header_counter)
+            0: begin
+              tlp_header_0 <= tlp_header_0;
+              tlp_header_1 <= 64'b0;
+              tlp_header_2 <= 64'b0;
+              tlp_header_3 <= 64'b0;
+            end
+
+            1: begin
+              tlp_header_0 <= tlp_header_0;
+              tlp_header_1 <= m_axis_tdata;
+              tlp_header_2 <= 64'b0;
+              tlp_header_3 <= 64'b0;
+            end
+
+            2: begin
+              tlp_header_0 <= tlp_header_0;
+              tlp_header_1 <= tlp_header_1;
+              tlp_header_2 <= m_axis_tdata;
+              tlp_header_3 <= 64'b0;
+            end
+
+            3: begin
+              tlp_header_0 <= tlp_header_0;
+              tlp_header_1 <= tlp_header_1;
+              tlp_header_2 <= tlp_header_2;
+              tlp_header_3 <= m_axis_tdata;
+            end
+
+            default: begin
+              tlp_header_0 <= tlp_header_0;
+              tlp_header_1 <= 64'b0;
+              tlp_header_2 <= 64'b0;
+              tlp_header_3 <= 64'b0;
+            end
+          endcase
+        end
+
+        else begin
+          tlp_header_0 <= tlp_header_0;
+          tlp_header_1 <= tlp_header_1;
+          tlp_header_2 <= tlp_header_2;
+          tlp_header_3 <= tlp_header_3;
+        end
       end
+      /*}}}*/
       /*}}}*/
 
       // EXEC/*{{{*/
       next[EXEC]: begin
-        // FIFO lines/*{{{*/
-
         // AXI FIFO input
         m_aclk              <= 1'b0;
         m_axis_tready       <= 1'b0;
-
-        // Header FIFO output
-        s_aclk              <= 1'b0;
-        s_aresetn           <= 1'b0;
-        s_axis_tvalid       <= 1'b0;
-        s_axis_tdata        <= 64'bx;
-        s_axis_tkeep        <= 8'b0;
-        s_axis_tlast        <= 1'b0;
-        /*}}}*/
 
         // OCP 2.2 Interface/*{{{*/
 
@@ -343,30 +442,27 @@ always @(posedge clk) begin
         writeresp_enable    <= 1'b0;
         /*}}}*/
 
-        counter <= 2'b0;
-        header_0 <= 64'b0;
-        header_1 <= 64'b0;
-        header_2 <= 64'b0;
-        header_3 <= 64'b0;
+        // Bridge internals/*{{{*/
+        
+        data_counter <= m_axis_tvalid ? data_counter + 1'b1 : data_counter;
+        header_counter <= 2'b0;
+        tlp_data_length <= tlp_data_length;
+        tlp_format <= tlp_format;
+        tlp_header_length <= tlp_header_length;
+        tlp_type <= tlp_type;
+        tlp_header_0 <= m_axis_tdata;
+        tlp_header_1 <= 64'b0;
+        tlp_header_2 <= 64'b0;
+        tlp_header_3 <= 64'b0;
       end
+      /*}}}*/
       /*}}}*/
 
       // DEFAULT/*{{{*/
       default: begin
-        // FIFO lines/*{{{*/
-
         // AXI FIFO input
         m_aclk              <= 1'b0;
         m_axis_tready       <= 1'b0;
-
-        // Header FIFO output
-        s_aclk              <= 1'b0;
-        s_aresetn           <= 1'b0;
-        s_axis_tvalid       <= 1'b0;
-        s_axis_tdata        <= 64'bx;
-        s_axis_tkeep        <= 8'b0;
-        s_axis_tlast        <= 1'b0;
-        /*}}}*/
 
         // OCP 2.2 Interface/*{{{*/
 
@@ -384,12 +480,20 @@ always @(posedge clk) begin
         writeresp_enable    <= 1'b0;
         /*}}}*/
 
-        counter <= 2'b0;
-        header_0 <= 64'b0;
-        header_1 <= 64'b0;
-        header_2 <= 64'b0;
-        header_3 <= 64'b0;
+        // Bridge internals/*{{{*/
+        
+        header_counter <= 2'b0;
+        data_counter <= 10'b0;
+        tlp_data_length <= 10'b0;
+        tlp_format <= 3'b0;
+        tlp_header_length <= 2'b0;
+        tlp_type <= 5'b0;
+        tlp_header_0 <= m_axis_tdata;
+        tlp_header_1 <= 64'b0;
+        tlp_header_2 <= 64'b0;
+        tlp_header_3 <= 64'b0;
       end
+      /*}}}*/
       /*}}}*/
     endcase
   end
