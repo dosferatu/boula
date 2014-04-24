@@ -132,7 +132,7 @@ xilinx_pcie_2_0_rport_v6 # (
       .REF_CLK_FREQ(0),
       .PL_FAST_TRAIN("TRUE"),
       .LINK_CAP_MAX_LINK_WIDTH(6'h01),
-      .DEVICE_ID(16'hFFFF),
+      .DEVICE_ID(16'h6011),
       .ALLOW_X8_GEN2("FALSE"),
       .LINK_CAP_MAX_LINK_SPEED(4'h1),
       .LINK_CTRL2_TARGET_LINK_SPEED(4'h1),

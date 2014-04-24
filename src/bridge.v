@@ -302,7 +302,7 @@ axi2ocp rx_bridge(
   .m_axis_tdata(RX_SLAVE_AXI_FIFO_DATA),
   .m_axis_tkeep(RX_SLAVE_AXI_FIFO_DATA_KEEP),
   .m_axis_tlast(RX_SLAVE_AXI_FIFO_DATA_LAST),
-  .axis_overflow(RX_SLAVE_AXI_FIFO_OVERFLOW),
+  .axis_underflow(RX_SLAVE_AXI_FIFO_OVERFLOW),
   /*}}}*/
   
   // OCP 2.2 Interface/*{{{*/
@@ -317,18 +317,7 @@ axi2ocp rx_bridge(
   .sys_clk(),
   .write_data(OCP_DATA_OUT),
   .write_request(WRITE_REQUEST),
-  .writeresp_enable(WRITE_RESPONSE_ENABLE),
-  /*}}}*/
-
-  // Header FIFO output/*{{{*/
-  .s_aclk(RX_OCP_CLK),
-  .s_aresetn(ocp_reset),
-  .s_axis_tvalid(RX_MASTER_OCP_FIFO_DATA_VALID),
-  .s_axis_tready(RX_MASTER_OCP_FIFO_DATA_READY),
-  .s_axis_tdata(RX_MASTER_OCP_FIFO_DATA),
-  .s_axis_tkeep(RX_MASTER_OCP_FIFO_DATA_KEEP),
-  .s_axis_tlast(RX_MASTER_OCP_FIFO_DATA_LAST),
-  .axis_underflow(RX_SLAVE_AXI_FIFO_UNDERFLOW)
+  .writeresp_enable(WRITE_RESPONSE_ENABLE)
   /*}}}*/
 );
 /*}}}*/

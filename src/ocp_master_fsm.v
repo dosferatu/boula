@@ -26,7 +26,7 @@
 `define data_wdth 8
 
 // Simple group
-//`define addrspace_wdth 0
+`define addrspace_wdth 0
 `define mdatainfo_wdth 0
 `define reqinfo_wdth 0
 `define respinfo_wdth 0
@@ -39,11 +39,11 @@
 `define blockstride_wdth 10
 
 // Tag group
-//`define tags 0
+`define tags 0
 
 // Thread group
-//`define connid_width 0
-//`define threads 0
+`define connid_width 0
+`define threads 0
 
 // Sideband group
 //`define control_wdth 0
@@ -89,7 +89,7 @@ module ocp_master_fsm(
   input wire [1:0]                      SResp,
 
   // Simple group
-  //output reg [`addrspace_wdth - 1:0]    MAddrSpace,
+  output reg [`addrspace_wdth - 1:0]    MAddrSpace,
   output reg [`data_wdth - 1:0]         MByteEn,
   output reg [`data_wdth - 1:0]         MDataByteEn,
   output reg [`mdatainfo_wdth - 1:0]    MDataInfo,
@@ -110,23 +110,23 @@ module ocp_master_fsm(
   output reg                            MReqLast,
   output reg                            MReqRowLast,
   input wire                            SRespLast,
-  input wire                            SRespRowLast
+  input wire                            SRespRowLast,
 
   // Tag group
-  //output reg [`tags - 1:0]              MDataTagID,
-  //output reg [`tags - 1:0]              MTagID,
-  //output reg                            MTagInOrder,
-  //input wire [`tags - 1:0]              STagID,
-  //input wire                            STagInOrder,
+  output reg [`tags - 1:0]              MDataTagID,
+  output reg [`tags - 1:0]              MTagID,
+  output reg                            MTagInOrder,
+  input wire [`tags - 1:0]              STagID,
+  input wire                            STagInOrder,
   
   // Thread group
-  //output reg [`connid_width - 1:0]      MConnID,
-  //output reg [`threads - 1:0]           MDataThreadID,
-  //output reg [`threads - 1:0]           MThreadBusy,
-  //output reg [`threads - 1:0]           MThreadID,
-  //input wire [`threads - 1:0]           SDataThreadBusy,
-  //input wire [`threads - 1:0]           SThreadBusy,
-  //input wire [`threads - 1:0]           SThreadID,
+  output reg [`connid_width - 1:0]      MConnID,
+  output reg [`threads - 1:0]           MDataThreadID,
+  output reg [`threads - 1:0]           MThreadBusy,
+  output reg [`threads - 1:0]           MThreadID,
+  input wire [`threads - 1:0]           SDataThreadBusy,
+  input wire [`threads - 1:0]           SThreadBusy,
+  input wire [`threads - 1:0]           SThreadID
   
   // Sideband group
   //output reg                            ConnectCap,
@@ -337,7 +337,7 @@ always @(posedge Clk) begin
     MRespAccept       <= 1'b1;
 
     // Simple group
-    //MAddrSpace        <= {`addrspace_wdth{1'b1}};
+    MAddrSpace        <= {`addrspace_wdth{1'b1}};
     MByteEn           <= {`data_wdth{1'b1}};
     MDataByteEn       <= {`data_wdth{1'b1}};
     MDataInfo         <= 1'b0;
@@ -357,15 +357,15 @@ always @(posedge Clk) begin
     MReqRowLast       <= 1'bx;
 
     // Tag group
-    //MDataTagID        <= 1'b0;
-    //MTagID            <= 1'b0;
-    //MTagInOrder       <= 1'b0;
+    MDataTagID        <= 1'b0;
+    MTagID            <= 1'b0;
+    MTagInOrder       <= 1'b0;
 
     // Thread group
-    //MConnID           <= 1'b0;
-    //MDataThreadID     <= 1'b0;
-    //MThreadBusy       <= 1'b0;
-    //MThreadID         <= 1'b0;
+    MConnID           <= 1'b0;
+    MDataThreadID     <= 1'b0;
+    MThreadBusy       <= 1'b0;
+    MThreadID         <= 1'b0;
 
     // Sideband group
     //ConnectCap        <= 1'bx;
@@ -413,7 +413,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        //MAddrSpace        <= {`addrspace_wdth{1'b0}};
+        MAddrSpace        <= {`addrspace_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -433,15 +433,15 @@ always @(posedge Clk) begin
         MReqRowLast       <= 1'bx;
 
         // Tag group
-        //MDataTagID        <= 1'b0;
-        //MTagID            <= 1'b0;
-        //MTagInOrder       <= 1'b0;
+        MDataTagID        <= 1'b0;
+        MTagID            <= 1'b0;
+        MTagInOrder       <= 1'b0;
 
         // Thread group
-        //MConnID           <= 1'b0;
-        //MDataThreadID     <= 1'b0;
-        //MThreadBusy       <= 1'b0;
-        //MThreadID         <= 1'b0;
+        MConnID           <= 1'b0;
+        MDataThreadID     <= 1'b0;
+        MThreadBusy       <= 1'b0;
+        MThreadID         <= 1'b0;
 
         // Sideband group
         //ConnectCap        <= 1'bx;
@@ -484,7 +484,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        //MAddrSpace        <= {`addrspace_wdth{1'b0}};
+        MAddrSpace        <= {`addrspace_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -505,15 +505,15 @@ always @(posedge Clk) begin
         MReqRowLast       <= 1'bx;
 
         // Tag group
-        //MDataTagID        <= 1'b0;
-        //MTagID            <= 1'b0;
-        //MTagInOrder       <= 1'b0;
+        MDataTagID        <= 1'b0;
+        MTagID            <= 1'b0;
+        MTagInOrder       <= 1'b0;
 
         // Thread group
-        //MConnID           <= 1'b0;
-        //MDataThreadID     <= 1'b0;
-        //MThreadBusy       <= 1'b0;
-        //MThreadID         <= 1'b0;
+        MConnID           <= 1'b0;
+        MDataThreadID     <= 1'b0;
+        MThreadBusy       <= 1'b0;
+        MThreadID         <= 1'b0;
 
         // Sideband group
         //ConnectCap        <= 1'bx;
@@ -556,7 +556,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        //MAddrSpace        <= {`addrspace_wdth{1'b0}};
+        MAddrSpace        <= {`addrspace_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -576,15 +576,15 @@ always @(posedge Clk) begin
         MReqRowLast       <= 1'bx;
 
         // Tag group
-        //MDataTagID        <= 1'b0;
-        //MTagID            <= 1'b0;
-        //MTagInOrder       <= 1'b0;
+        MDataTagID        <= 1'b0;
+        MTagID            <= 1'b0;
+        MTagInOrder       <= 1'b0;
 
         // Thread group
-        //MConnID           <= 1'b0;
-        //MDataThreadID     <= 1'b0;
-        //MThreadBusy       <= 1'b0;
-        //MThreadID         <= 1'b0;
+        MConnID           <= 1'b0;
+        MDataThreadID     <= 1'b0;
+        MThreadBusy       <= 1'b0;
+        MThreadID         <= 1'b0;
 
         // Sideband group
         //ConnectCap        <= 1'bx;
@@ -627,7 +627,7 @@ always @(posedge Clk) begin
         MRespAccept       <= 1'b1;
 
         // Simple group
-        //MAddrSpace        <= {`addrspace_wdth{1'b0}};
+        MAddrSpace        <= {`addrspace_wdth{1'b0}};
         MByteEn           <= {`data_wdth{1'b1}};
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
@@ -647,15 +647,15 @@ always @(posedge Clk) begin
         MReqRowLast       <= 1'bx;
 
         // Tag group
-        //MDataTagID        <= 1'b0;
-        //MTagID            <= 1'b0;
-        //MTagInOrder       <= 1'b0;
+        MDataTagID        <= 1'b0;
+        MTagID            <= 1'b0;
+        MTagInOrder       <= 1'b0;
 
         // Thread group
-        //MConnID           <= 1'b0;
-        //MDataThreadID     <= 1'b0;
-        //MThreadBusy       <= 1'b0;
-        //MThreadID         <= 1'b0;
+        MConnID           <= 1'b0;
+        MDataThreadID     <= 1'b0;
+        MThreadBusy       <= 1'b0;
+        MThreadID         <= 1'b0;
 
         // Sideband group
         //ConnectCap        <= 1'bx;

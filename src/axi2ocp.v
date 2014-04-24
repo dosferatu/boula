@@ -63,7 +63,7 @@ module axi2ocp(
   input wire [63:0] m_axis_tdata,
   input wire [7:0] m_axis_tkeep,
   input wire m_axis_tlast,
-  input wire axis_overflow,
+  input wire axis_underflow,
   /*}}}*/
   
   // OCP 2.2 Interface/*{{{*/
@@ -107,6 +107,13 @@ localparam MWR    = 3'b010; // 3DW header, with data
 localparam MWR2   = 3'b011; // 4DW header, with data
 localparam PRFX   = 3'b100; // TLP Prefix
 
+// Transaction encodings to generate OCP requests
+localparam MEMORY_READ            = 3'b000;
+localparam MEMORY_READ_LOCKED     = 3'b001;
+localparam MEMORY_WRITE           = 3'b010;
+localparam IO_READ                = 3'b011;
+localparam IO_WRITE               = 3'b100;
+
 reg [3:0] state;
 reg [3:0] next;
 
@@ -126,6 +133,7 @@ reg [63:0] tlp_header_3;
 
 reg [2:0] tlp_format;
 reg [4:0] tlp_type;
+reg [1:0] address_type;
 
 reg [1:0] header_counter;
 reg [9:0] data_counter;
@@ -434,11 +442,11 @@ always @(posedge clk) begin
         burst_single_req    <= 1'b0;
         burst_length        <= 1'b1;
         data_valid          <= 1'b0;
-        read_request        <= 1'b0;
+        read_request        <= ~(tlp_format & 3'b010);
         ocp_reset           <= 1'b0;
         sys_clk             <= 1'b0;
         write_data          <= {`data_wdth{1'b0}};
-        write_request       <= 1'b0;
+        write_request       <= tlp_format & 3'b010;
         writeresp_enable    <= 1'b0;
         /*}}}*/
 
@@ -450,10 +458,10 @@ always @(posedge clk) begin
         tlp_format <= tlp_format;
         tlp_header_length <= tlp_header_length;
         tlp_type <= tlp_type;
-        tlp_header_0 <= m_axis_tdata;
-        tlp_header_1 <= 64'b0;
-        tlp_header_2 <= 64'b0;
-        tlp_header_3 <= 64'b0;
+        tlp_header_0 <= tlp_header_0;
+        tlp_header_1 <= tlp_header_1;
+        tlp_header_2 <= tlp_header_2;
+        tlp_header_3 <= tlp_header_3;
       end
       /*}}}*/
       /*}}}*/

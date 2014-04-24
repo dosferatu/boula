@@ -21,12 +21,83 @@
 
   <sourceproject xmlns="http://www.xilinx.com/XMLSchema" xil_pn:fileType="FILE_XISE" xil_pn:name="PCIe2OCP.xise"/>
 
-  <files xmlns="http://www.xilinx.com/XMLSchema"/>
+  <files xmlns="http://www.xilinx.com/XMLSchema">
+    <file xil_pn:fileType="FILE_SYMBOL" xil_pn:name="../gen/FIFO.sym" xil_pn:origination="imported"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_VERILOG" xil_pn:name="../gen/FIFO.v" xil_pn:origination="imported"/>
+    <file xil_pn:fileType="FILE_LOG" xil_pn:name="../gen/coregen.log"/>
+    <file xil_pn:fileType="FILE_XMSGS" xil_pn:name="_xmsgs/xst.xmsgs"/>
+    <file xil_pn:fileType="FILE_CMD_LOG" xil_pn:name="bridge.cmd_log"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_LSO" xil_pn:name="bridge.lso"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_XST_PROJECT" xil_pn:name="bridge.prj"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_XST_REPORT" xil_pn:name="bridge.syr"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_XST" xil_pn:name="bridge.xst"/>
+    <file xil_pn:fileType="FILE_HTML" xil_pn:name="bridge_summary.html"/>
+    <file xil_pn:fileType="FILE_XRPT" xil_pn:name="bridge_xst.xrpt"/>
+    <file xil_pn:fileType="FILE_FITTER_REPORT" xil_pn:name="webtalk_pn.xml"/>
+    <file xil_pn:fileType="FILE_DIRECTORY" xil_pn:name="xst"/>
+  </files>
 
   <transforms xmlns="http://www.xilinx.com/XMLSchema">
+    <transform xil_pn:end_ts="1398310997" xil_pn:name="TRAN_schematicsToHdl" xil_pn:prop_ck="1919421822998127252" xil_pn:start_ts="1398310997">
+      <status xil_pn:value="SuccessfullyRun"/>
+      <status xil_pn:value="ReadyToRun"/>
+    </transform>
+    <transform xil_pn:end_ts="1398310997" xil_pn:in_ck="-7537537204330506531" xil_pn:name="TRAN_regenerateCores" xil_pn:prop_ck="8885863829587886122" xil_pn:start_ts="1398310997">
+      <status xil_pn:value="SuccessfullyRun"/>
+      <status xil_pn:value="ReadyToRun"/>
+      <outfile xil_pn:name="../gen/FIFO.ngc"/>
+      <outfile xil_pn:name="../gen/FIFO.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/PCIe.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/axi_basic_rx.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/axi_basic_rx_null_gen.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/axi_basic_rx_pipeline.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/axi_basic_top.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/axi_basic_tx.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/axi_basic_tx_pipeline.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/axi_basic_tx_thrtl_ctl.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/gtx_rx_valid_filter_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/gtx_tx_sync_rate_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/gtx_wrapper_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_2_0_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_bram_top_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_bram_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_brams_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_clocking_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_gtx_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_pipe_lane_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_pipe_misc_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_pipe_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_reset_delay_v6.v"/>
+      <outfile xil_pn:name="../gen/PCIe/source/pcie_upconfig_fix_3451_v6.v"/>
+    </transform>
     <transform xil_pn:name="TRAN_SubProjectAbstractToPreProxy">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
+    </transform>
+    <transform xil_pn:end_ts="1398310997" xil_pn:name="TRAN_xawsTohdl" xil_pn:prop_ck="-3765512013722484668" xil_pn:start_ts="1398310997">
+      <status xil_pn:value="SuccessfullyRun"/>
+      <status xil_pn:value="ReadyToRun"/>
+    </transform>
+    <transform xil_pn:end_ts="1398310997" xil_pn:in_ck="-2080962813949223077" xil_pn:name="TRAN_SubProjectPreToStructuralProxy" xil_pn:prop_ck="-311711526559847569" xil_pn:start_ts="1398310997">
+      <status xil_pn:value="SuccessfullyRun"/>
+      <status xil_pn:value="ReadyToRun"/>
+    </transform>
+    <transform xil_pn:end_ts="1398310997" xil_pn:name="TRAN_platgen" xil_pn:prop_ck="1220691833188919668" xil_pn:start_ts="1398310997">
+      <status xil_pn:value="SuccessfullyRun"/>
+      <status xil_pn:value="ReadyToRun"/>
+    </transform>
+    <transform xil_pn:end_ts="1398311007" xil_pn:in_ck="1190153579840544416" xil_pn:name="TRANEXT_xstsynthesize_virtex6" xil_pn:prop_ck="-3671684750825443360" xil_pn:start_ts="1398310997">
+      <status xil_pn:value="FailedRun"/>
+      <status xil_pn:value="WarningsGenerated"/>
+      <status xil_pn:value="ReadyToRun"/>
+      <outfile xil_pn:name="_xmsgs/xst.xmsgs"/>
+      <outfile xil_pn:name="bridge.lso"/>
+      <outfile xil_pn:name="bridge.prj"/>
+      <outfile xil_pn:name="bridge.syr"/>
+      <outfile xil_pn:name="bridge.xst"/>
+      <outfile xil_pn:name="bridge_xst.xrpt"/>
+      <outfile xil_pn:name="webtalk_pn.xml"/>
+      <outfile xil_pn:name="xst"/>
     </transform>
   </transforms>
 

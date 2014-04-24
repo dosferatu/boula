@@ -258,7 +258,7 @@ initial begin
         BAR_INIT_P_IO_START      =   33'h00000_0000; // start of 32bit io
 
 
-        DEV_VEN_ID = (32'hFFFF << 16) | (32'hFFFF);
+        DEV_VEN_ID = (32'h6011 << 16) | (32'h8086);
         PIO_MAX_MEMORY = 8192; // PIO has max of 8Kbytes of memory
         PIO_MAX_NUM_BLOCK_RAMS = 4; // PIO has four block RAMS to test
 
@@ -396,9 +396,9 @@ end
     TSK_TX_TYPE0_CONFIGURATION_READ(DEFAULT_TAG, 12'h0, 4'hF);
     TSK_WAIT_FOR_READ_DATA;
 
-    if  (P_READ_DATA[31:16] != 16'hFFFF) begin
+    if  (P_READ_DATA[31:16] != 16'h6011) begin
         $display("[%t] :    Check Device/Vendor ID - FAILED", $realtime);
-        $display("[%t] : Data Error Mismatch, Parameter Data %x != Read Data %x", $realtime, 16'hFFFF, P_READ_DATA);
+        $display("[%t] : Data Error Mismatch, Parameter Data %x != Read Data %x", $realtime, 16'h6011, P_READ_DATA);
         error_check = 1;
     end else begin
         $display("[%t] :    Check Device/Vendor ID - PASSED", $realtime);
