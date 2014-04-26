@@ -66,6 +66,7 @@ module ocp_master_fsm(
   input wire                            read_request,
   input wire                            reset,
   input wire                            sys_clk,
+  input wire [`data_wdth - 1:0]         valid_bytes,
   input wire [`data_wdth - 1:0]         write_data,   // Coming from PCIe side
   input wire                            write_request,
   input wire                            writeresp_enable, // NOT IMPLEMENTED
@@ -485,7 +486,8 @@ always @(posedge Clk) begin
 
         // Simple group
         MAddrSpace        <= {`addrspace_wdth{1'b0}};
-        MByteEn           <= {`data_wdth{1'b1}};
+        //MByteEn           <= {`data_wdth{1'b1}};
+        MByteEn           <= valid_bytes;
         MDataByteEn       <= {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
         MReqInfo          <= 1'b0;
@@ -493,11 +495,13 @@ always @(posedge Clk) begin
         // Burst group
         MAtomicLength     <= 1'b1;
         MBlockHeight      <= 1'b1;
+        //MBlockHeight      <= (burst_seq == BLCK) ? <row_length> : 1'b1;
         MBlockStride      <= 1'b0;
         MBurstLength      <= burst_length;
         MBurstPrecise     <= 1'b1;
         MBurstSeq         <= burst_seq;
-        MBurstSingleSeq   <= burst_single_req;
+        //MBurstSingleSeq   <= burst_single_req;
+        MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
         //MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
@@ -512,7 +516,7 @@ always @(posedge Clk) begin
         // Thread group
         MConnID           <= 1'b0;
         MDataThreadID     <= 1'b0;
-        MThreadBusy       <= 1'b0;
+        MThreadBusy       <= 1'b0;  // SET THIS ACCORDING TO FIFO READY
         MThreadID         <= 1'b0;
 
         // Sideband group
@@ -557,19 +561,23 @@ always @(posedge Clk) begin
 
         // Simple group
         MAddrSpace        <= {`addrspace_wdth{1'b0}};
-        MByteEn           <= {`data_wdth{1'b1}};
-        MDataByteEn       <= {`data_wdth{1'b1}};
+        //MByteEn           <= {`data_wdth{1'b1}};
+        MByteEn           <= valid_bytes;
+        MDataByteEn       <= write_request ? valid_bytes : {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
         MReqInfo          <= 1'b0;
 
         // Burst group
         MAtomicLength     <= 1'b1;
         MBlockHeight      <= 1'b1;
+        //MBlockHeight      <= (burst_seq == BLCK) ? <row_length> : 1'b1;
         MBlockStride      <= 1'b0;
+        //MBlockStride      <= (burst_sq == BLCK) ? <diff between rows> : 1'b0;
         MBurstLength      <= burst_length;
         MBurstPrecise     <= 1'b1;
         MBurstSeq         <= burst_seq;
-        MBurstSingleSeq   <= burst_single_req;
+        //MBurstSingleSeq   <= burst_single_req;
+        MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
         MReqLast          <= (burst_count == (burst_length - 1'b1)) | burst_single_req;
@@ -583,7 +591,7 @@ always @(posedge Clk) begin
         // Thread group
         MConnID           <= 1'b0;
         MDataThreadID     <= 1'b0;
-        MThreadBusy       <= 1'b0;
+        MThreadBusy       <= 1'b0;  // SET THIS ACCORDING TO FIFO READY
         MThreadID         <= 1'b0;
 
         // Sideband group
