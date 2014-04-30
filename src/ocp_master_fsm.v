@@ -55,6 +55,8 @@
 //`define scanport_wdth 0
 /*}}}*/
 
+`define fifo_wdth (`data_wdth * 8)
+
 module ocp_master_fsm(
   // Bridge interface/*{{{*/
   input wire [`addr_wdth - 1:0]         address,
@@ -71,7 +73,14 @@ module ocp_master_fsm(
   input wire                            write_request,
   input wire                            writeresp_enable, // NOT IMPLEMENTED
 
-  output reg [`data_wdth - 1:0]         read_data,    // Coming from OCP bus
+  // AXI FIFO outputs
+  output reg s_aclk,
+  output reg s_axis_tvalid,
+  input wire s_axis_tready,
+  output reg [`fifo_wdth - 1:0] s_axis_tdata,
+  output reg [`data_wdth - 1:0] s_axis_tkeep,
+  output reg s_axis_tlast,
+  input wire axis_overflow,
   /*}}}*/
 
   // OCP 2.2 interface/*{{{*/
@@ -243,33 +252,73 @@ end
 /*}}}*/
 
 // Next state logic/*{{{*/
-always @(state or read_request or write_request or MReqLast or SCmdAccept or SResp or SData) begin
+always @(state or read_request or write_request or MReqLast or SCmdAccept or SResp or SData or s_axis_tready) begin
+//always @(*) begin
   next <= 3'b0;
 
   // Handle slave response/*{{{*/
   case (SResp)
     // No response
     NULL: begin
-      read_data <= {`data_wdth{1'bx}};
+      s_aclk <= Clk;
+      s_axis_tvalid <= 1'b1;
+      
+      // Ignore s_axis_tready
+      s_axis_tdata <= {`fifo_wdth{1'bx}};
+      s_axis_tkeep <= {`data_wdth{1'b0}};
     end
 
     // Data valid / accept
     DVA: begin
-      read_data <= SData;
+      s_aclk <= Clk;
+      s_axis_tvalid <= 1'b1;
+      
+      // Wait for ready
+      if (s_axis_tready) begin
+        s_axis_tdata <= SData;
+        s_axis_tkeep <= {`data_wdth{1'b1}};
+      end
+
+      else begin
+        s_axis_tdata <= {`fifo_wdth{1'bx}};
+        s_axis_tkeep <= {`data_wdth{1'b0}};
+      end
     end
 
     // Request failed
     FAIL: begin
-      read_data <= SData;
+      s_aclk <= Clk;
+      s_axis_tvalid <= 1'b1;
+
+      // Wait for ready
+      if (s_axis_tready) begin
+        s_axis_tdata <= SData;
+        s_axis_tkeep <= {`data_wdth{1'b1}};
+      end
+
+      else begin
+        s_axis_tdata <= {`fifo_wdth{1'bx}};
+        s_axis_tkeep <= {`data_wdth{1'b0}};
+      end
     end
 
     // Response error
     ERR: begin
-      read_data <= {`data_wdth{1'bx}};
+      s_aclk <= 1'b0;
+      s_axis_tvalid <= 1'b0;
+
+      // Ignore s_axis_tready
+      s_axis_tdata <= {`fifo_wdth{1'bx}};
+      s_axis_tkeep <= {`data_wdth{1'b0}};
     end
 
     default: begin
-      read_data <= {`data_wdth{1'bx}};
+      s_aclk <= Clk;
+      s_axis_tvalid <= 1'b1;
+
+      // Ignore s_axis_tready
+      s_axis_tdata <= {`fifo_wdth{1'bx}};
+      s_axis_tkeep <= {`data_wdth{1'b1}};
     end
   endcase
 /*}}}*/
