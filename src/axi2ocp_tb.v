@@ -131,7 +131,7 @@ initial begin
   // Fmt: 001     - 4 DW header, no data
   // Type: 0 0000 - Memory read request
   // Header 1: 00X0 0000 0000 0000 0000 0000 0000 0000
-  // Header 2
+  // Header 2  [   requester id  ] [  tag  ] [lbe][be]
   // Header 3: eeee eeee eeee eeee eeee eeee eeee eeee Test addr1
   // Header 4: ffff ffff ffff ffff ffff ffff ffff ffff Test addr2
 
@@ -142,6 +142,7 @@ initial begin
   m_axis_tlast          <= 1'b0;
   
   // Header 2 of 4
+  // Fill in with 0xXXXXXXFF since request is greater than 1 DW
   #100 m_axis_tvalid    <= 1'b1;
   m_axis_tdata          <= `fifo_wdth'b0; // FILL IN WITH READ R INF
   m_axis_tkeep          <= {`data_wdth{'b1}};
@@ -170,7 +171,7 @@ initial begin
   // Fmt: 001     - 4 DW header, no data
   // Type: 0 0000 - Memory read request
   // Header 1: 01X0 0000 0000 0000 0000 0000 0000 1101
-  // Header 2
+  // Header 2  [   requester id  ] [  tag  ] [lbe][be]
   // Header 3: dddd dddd dddd dddd dddd dddd dddd dddd Test addr1
   // Header 4: cccc cccc cccc cccc cccc cccc cccc cccc Test addr2
   
@@ -182,6 +183,7 @@ initial begin
   
   // Header 2 of 4
   #100 m_axis_tvalid    <= 1'b1;
+  // Fill in with 0xXXXXXXFF since request is greater than 1 DW
   m_axis_tdata          <= `fifo_wdth'b0; // FILL IN WITH WRITE R INF
   m_axis_tkeep          <= {`data_wdth{'b1}};
   m_axis_tlast          <= 1'b0;
