@@ -106,7 +106,6 @@ initial begin
   m_axis_tdata      <= `fifo_wdth'bx;
   m_axis_tkeep      <= `data_wdth'bx;
   m_axis_tlast      <= 1'b0;
-  //axis_underflow <= 1'b0;
 
   forever begin
     #10 clk         <= ~clk;
@@ -123,52 +122,167 @@ initial begin
   m_axis_tvalid     <= 1'b0;
   m_axis_tdata      <= `fifo_wdth'bx;
   m_axis_tkeep      <= `data_wdth'bx;
-  m_axis_tlast      <= 1'b0;
-  //axis_underflow <= 1'b0;/*}}}*/
-
+  m_axis_tlast      <= 1'b0;/*}}}*/
   
   // Simulate a read from a 64-bit address for 10 bytes worth of data/*{{{*/
+  
   // TLP consists of just a header, which will be in 4 parts we will
   // need to pull from the FIFO.
   // Fmt: 001     - 4 DW header, no data
   // Type: 0 0000 - Memory read request
-  // Header 1: 0010 0000 0000 0000 0000 0000 0000 0000
+  // Header 1: 00X0 0000 0000 0000 0000 0000 0000 0000
   // Header 2
   // Header 3: eeee eeee eeee eeee eeee eeee eeee eeee Test addr1
   // Header 4: ffff ffff ffff ffff ffff ffff ffff ffff Test addr2
 
   // Header 1 of 4
-  #100 m_axis_tvalid     <= 1'b1;
-  m_axis_tdata      <= `fifo_wdth'h20000000;
-  m_axis_tkeep      <= {`data_wdth{'b1}};
-  m_axis_tlast      <= 1'b0;
-  //axis_underflow <= 1'b0;
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h20000000;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
   
   // Header 2 of 4
-  #100 m_axis_tvalid     <= 1'b1;
-  m_axis_tdata      <= `fifo_wdth'b0; // FILL IN WITH READ R INF
-  m_axis_tkeep      <= {`data_wdth{'b1}};
-  m_axis_tlast      <= 1'b0;
-  //axis_underflow <= 1'b0;
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'b0; // FILL IN WITH READ R INF
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
   
   // Header 3 of 4
-  #100 m_axis_tvalid     <= 1'b1;
-  m_axis_tdata      <= `fifo_wdth'heeeeeeee;
-  m_axis_tkeep      <= {`data_wdth{'b1}};
-  m_axis_tlast      <= 1'b0;
-  //axis_underflow <= 1'b0;
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'heeeeeeee;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
   
   // Header 4 of 4
-  #100 m_axis_tvalid     <= 1'b1;
-  m_axis_tdata      <= `fifo_wdth'hffffffff;
-  m_axis_tkeep      <= {`data_wdth{'b1}};
-  m_axis_tlast      <= 1'b1;
-  //axis_underflow <= 1'b0;
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'hffffffff;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b1;
 
-  // WAIT FOR BRIDGE TO FINISH TRANSLATING THE READ REQUEST HERE/*}}}*/
+  // Wait for bridge to finish translating the read request and for
+  // it to asseart m_axis_tready on the FIFO
+  #200/*}}}*/ // 20 unit clock period * 10 bytes
 
+  // Simulate a write to a 64-bit address for 13 bytes/*{{{*/
+  
+  // TLP consists of just a header, which will be in 4 parts we will
+  // need to pull from the FIFO.
+  // Fmt: 001     - 4 DW header, no data
+  // Type: 0 0000 - Memory read request
+  // Header 1: 01X0 0000 0000 0000 0000 0000 0000 1101
+  // Header 2
+  // Header 3: dddd dddd dddd dddd dddd dddd dddd dddd Test addr1
+  // Header 4: cccc cccc cccc cccc cccc cccc cccc cccc Test addr2
+  
+  // Header 1 of 4
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h6000000d;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Header 2 of 4
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'b0; // FILL IN WITH WRITE R INF
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Header 3 of 4
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'hdddddddd;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Header 4 of 4
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'hcccccccc;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 1 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'hffffffff;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 2 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'heeeeeeee;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 3 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'hdddddddd;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 4 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'hcccccccc;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 5 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'hbbbbbbbb;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 6 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'haaaaaaaa;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 7 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h99999999;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 8 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h88888888;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 9 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h77777777;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 10 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h66666666;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 11 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h55555555;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 12 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h44444444;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b0;
+  
+  // Data 13 of 13
+  #100 m_axis_tvalid    <= 1'b1;
+  m_axis_tdata          <= `fifo_wdth'h33333333;
+  m_axis_tkeep          <= {`data_wdth{'b1}};
+  m_axis_tlast          <= 1'b1;
 
-  // Simulate a write to a 64-bit address for 13 bytes
+  #100/*}}}*/
 
+  // Finish test bench/*{{{*/
+  #100 m_aclk           <= 1'b0;
+  m_axis_tvalid         <= 1'b0;
+  m_axis_tdata          <= `fifo_wdth'bx;
+  m_axis_tkeep          <= `data_wdth'bx;
+  m_axis_tlast          <= 1'b0;/*}}}*/
 end/*}}}*/
 endmodule
