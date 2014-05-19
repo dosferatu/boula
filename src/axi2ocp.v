@@ -1,5 +1,3 @@
-//`include "multiplexor.v"
-
 /*
  * AXI to OCP translation block
  * Author: Michael Walton
@@ -44,6 +42,8 @@
 //`define scanport_wdth 0
 /*}}}*/
 
+`define fifo_wdth 64
+
 /*
  * DESIGN NOTES:
  * message requests use a sub-field to specify the message routing mechanism
@@ -60,8 +60,8 @@ module axi2ocp(
   output reg m_aclk,
   input wire m_axis_tvalid,
   output reg m_axis_tready,
-  input wire [63:0] m_axis_tdata,
-  input wire [7:0] m_axis_tkeep,
+  input wire [`fifo_wdth - 1:0] m_axis_tdata,
+  input wire [`data_wdth - 1:0] m_axis_tkeep,
   input wire m_axis_tlast,
   input wire axis_underflow,
   /*}}}*/
@@ -436,7 +436,7 @@ always @(posedge clk) begin
 
         // OCP 2.2 Interface/*{{{*/
 
-        address             <= {`addr_wdth{1'b0}};
+        address             <= {`addr_wdth{1'b0}};  // Set this using the base address register + counter offset
         enable              <= 1'b1;
         burst_seq           <= INCR;
         burst_single_req    <= 1'b0;
@@ -446,7 +446,7 @@ always @(posedge clk) begin
         ocp_reset           <= 1'b0;
         sys_clk             <= 1'b0;
         write_data          <= {`data_wdth{1'b0}};
-        write_request       <= tlp_format & 3'b010;
+        write_request       <= tlp_format & 3'b010; // Check if bit 2 is clear in the format register
         writeresp_enable    <= 1'b0;
         /*}}}*/
 
