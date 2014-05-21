@@ -75,7 +75,7 @@ ocp_master_fsm U0(
   .reset(reset),
   .write_data(write_data),
   .write_request(write_request),
-  .read_data(read_data),
+  //.read_data(read_data),
   .sys_clk(clk),
   .Clk(Clk),
   .EnableClk(EnableClk),

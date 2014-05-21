@@ -384,7 +384,8 @@ always @(posedge Clk) begin
     MCmd              <= IDLE;
     MData             <= {`data_wdth{1'bx}};
     MDataValid        <= 1'bx;
-    MRespAccept       <= 1'b1;
+    //MRespAccept       <= 1'b1;
+    MRespAccept       <= s_axis_tready;
 
     // Simple group
     MAddrSpace        <= {`addrspace_wdth{1'b1}};
@@ -460,7 +461,8 @@ always @(posedge Clk) begin
         MCmd              <= IDLE;
         MData             <= {`data_wdth{1'b0}};
         MDataValid        <= 1'bx;
-        MRespAccept       <= 1'b1;
+        //MRespAccept       <= 1'b1;
+        MRespAccept       <= s_axis_tready;
 
         // Simple group
         MAddrSpace        <= {`addrspace_wdth{1'b0}};
@@ -531,7 +533,8 @@ always @(posedge Clk) begin
         MCmd              <= WR;
         MData             <= write_data;
         MDataValid        <= 1'bx;
-        MRespAccept       <= 1'b1;
+        //MRespAccept       <= 1'b1;
+        MRespAccept       <= s_axis_tready;
 
         // Simple group
         MAddrSpace        <= {`addrspace_wdth{1'b0}};
@@ -606,7 +609,8 @@ always @(posedge Clk) begin
         MCmd              <= RD;
         MData             <= {`data_wdth{1'b0}};
         MDataValid        <= 1'bx;
-        MRespAccept       <= 1'b1;
+        //MRespAccept       <= 1'b1;
+        MRespAccept       <= s_axis_tready;
 
         // Simple group
         MAddrSpace        <= {`addrspace_wdth{1'b0}};
@@ -681,7 +685,8 @@ always @(posedge Clk) begin
         MCmd              <= IDLE;
         MData             <= {`data_wdth{1'b0}};
         MDataValid        <= 1'bx;
-        MRespAccept       <= 1'b1;
+        //MRespAccept       <= 1'b1;
+        MRespAccept       <= s_axis_tready;
 
         // Simple group
         MAddrSpace        <= {`addrspace_wdth{1'b0}};
