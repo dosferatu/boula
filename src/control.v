@@ -24,32 +24,11 @@
         );
 
 
-        // Establish parameters needed for parameterizaion of the control module
-        parameter MAX_PAYLOAD = 1024;   // This is maximum size of a single TLP in bytes
-
-
-        // Setup needed local parameters for bridge control
-        //  States of the FSM for getting flow credit information
-        localparam      IDLE    = 2'b00; // Sits and waits for something to happen
-        localparam      REQ_FC  = 2'b01; // Requests flow credit information for TLP
-        localparam      WAIT1   = 2'b10; // Causing a wait of a one cycle to get the FC info
-        localparam      STR_FC  = 2'b11; // Updates flow credits into appropriate register
-        //  FC_SEL Options
-        localparam      RXAVAIL = 3'b000;// Receiver flow control credits available
-        localparam      TXAVAIL = 3'b100;// Transmit flow control credits available
-
-
         // Other control module parameters/registers for necessary control
         // oeprations.
         reg [1:0]       current;
         reg [1:0]       next;
         reg             bridge_ready;
-        reg [7:0]       Tx_fc_ph;
-        reg [11:0]      Tx_fc_pd;
-        reg [7:0]       Tx_fc_nph;
-        reg [11:0]      Tx_fc_npd;
-        reg [7:0]       Tx_fc_cplh;
-        reg [11:0]      Tx_fc_cpld;
 
 
         // Set reset value for system
@@ -65,15 +44,28 @@
         //  Ctrl_RST should be deasserted before anything in the module should
         //  begin working
         always @(Ctrl_Link_Up, Ctrl_RST) begin
-                if (Ctrl_Link_Up & !Ctrl_RST)   begin bridge_ready = 1'b1; end  // Bridge can operate
-                else                            begin bridge_ready = 1'b0; end  // Bridge should be idle
+                if (Ctrl_Link_Up & !Ctrl_RST)   bridge_ready = 1'b1; // Bridge can operate
+                else                            bridge_ready = 1'b0; // Bridge should be idle
         end
 
 
         // Set up all of the buffer values for processing packets
         //  Control should signal that it is not ok to transmit a given packet
         //  type once less than one maximum size packet can fit.
-        
+        always begin
+                if (Ctrl_fc_ph [7] == 0)        Ctrl_Tx_FC[0] <= 0;
+                        else Ctrl_Tx_FC[0] <= 1;
+                if (Ctrl_fc_ph[11:10] == 0)     Ctrl_Tx_FC[1] <= 0;
+                        else Ctrl_Tx_FC[1] <= 1;
+                if (Ctrl_fc_nph[7] == 0)        Ctrl_Tx_FC[2] <= 0;
+                        else Ctrl_Tx_FC[2] <= 1;
+                if (Ctrl_fc_npd[11:10] == 0)    Ctrl_Tx_FC[3] <= 0;
+                        else Ctrl_Tx_FC[3] <= 1;
+                if (Ctrl_fc_cplh[7] == 0)       Ctrl_Tx_FC[4] <= 0;
+                        else Ctrl_Tx_FC[4] <= 1;
+                if (Ctrl_fc_cpld[11:10] == 0)   Ctrl_Tx_FC[5] <= 0;
+                        else Ctrl_Tx_FC[5] <= 1;
+        end
 
 
         // Set ready logic for the signals going to each of the bridge modules
@@ -87,14 +79,4 @@
                 Ctrl_fc_sel = 3'b100;   // Set to request Tx available buffer space
         end
         
-        
-        // Clock in the value for each of the buffers
-        always @(Ctrl_CLK) begin
-               Tx_fc_ph         = Ctrl_fc_pd;
-               Tx_fc_pd         = Ctrl_fc_pd;
-               Tx_fc_nph        = Ctrl_fc_nph;
-               Tx_fc_npd        = Ctrl_fc_npd;
-               Tx_fc_cplh       = Ctrl_fc_cplh;
-               Tx_fc_cpld       = Ctrl_fc_cpld;
-        end
 end module
