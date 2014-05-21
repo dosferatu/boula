@@ -16,19 +16,10 @@
 
         // Outputs of module
         output reg [2:0] Ctrl_fc_sel,    // Selection of desired flow control type
-        output           Ctrl_Rx_Ready,  // Signals to Rx Bridge that it is ok to receive
-        output           Ctrl_Tx_Ready,  // Signals to Tx Bridge that it is ok to transmit
-        output           Ctrl_OCP_Ready, // Signals to OCP Controller that it is ok to operate
+        output           Ctrl_Bridge_Ready, // Signals to the rest of the bridge that operation is ok
         output           Ctrl_Bridge_RST,// Signals to Bridge that a reset is needed
         output [5:0]     Ctrl_Tx_FC      // Signals for Flow Credits to transmit bridge module
         );
-
-
-        // Other control module parameters/registers for necessary control
-        // oeprations.
-        reg [1:0]       current;
-        reg [1:0]       next;
-        reg             bridge_ready;
 
 
         // Set reset value for system
@@ -44,8 +35,8 @@
         //  Ctrl_RST should be deasserted before anything in the module should
         //  begin working
         always @(Ctrl_Link_Up, Ctrl_RST) begin
-                if (Ctrl_Link_Up & !Ctrl_RST)   bridge_ready = 1'b1; // Bridge can operate
-                else                            bridge_ready = 1'b0; // Bridge should be idle
+                if (Ctrl_Link_Up & !Ctrl_RST)   Ctrl_Bridge_Ready = 1'b1; // Bridge ready
+                else                            Ctrl_Bridge_Ready = 1'b0; // Bridge should be idle
         end
 
 
@@ -66,12 +57,6 @@
                 if (Ctrl_fc_cpld[11:10] == 0)   Ctrl_Tx_FC[5] <= 0;
                         else Ctrl_Tx_FC[5] <= 1;
         end
-
-
-        // Set ready logic for the signals going to each of the bridge modules
-        assign Ctrl_Rx_Ready    = bridge_ready; // ****** This needs more once FC is set up
-        assign Ctrl_Tx_Ready    = bridge_ready; // ****** This needs more once FC is set up
-        assign Ctrl_OCP_Ready   = bridge_ready; // This is good to go
 
        
         // Initialize Flow Credit Select register
