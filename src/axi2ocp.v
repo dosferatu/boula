@@ -445,7 +445,7 @@ always @(posedge clk) begin
         read_request        <= ~(tlp_format & 3'b010);
         ocp_reset           <= 1'b0;
         sys_clk             <= 1'b0;
-        write_data          <= {`data_wdth{1'b0}};
+        write_data          <= (write_request & m_axis_tvalid) ? m_axis_tdata : {`data_wdth{1'b0}};
         write_request       <= tlp_format & 3'b010; // Check if bit 2 is clear in the format register
         writeresp_enable    <= 1'b0;
         /*}}}*/
