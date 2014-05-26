@@ -27,8 +27,9 @@ module rx_fsm(
     /*}}}*/
 
     // OCP Registers/*{{{*/
-    input wire optype;               // Indicates that the header will be 4DW, not 3DW and if data is present or not
-    output reg [2:0] ocp_reg_ctl;
+    input wire ocp_ready;           // Indicates that the OCP interface is ready for transmission of data
+    input wire optype;              // Indicates that the header will be 4DW, not 3DW and if data is present or not
+    output reg [2:0] ocp_reg_ctl;   // Controls the inputs to the OCP registers for translation and data
     );
 
     // Declarations/*{{{*/
@@ -99,13 +100,12 @@ module rx_fsm(
             // H2/*{{{*/
             // Second header slice transmitted
             state[H2]: begin
-                if (rx_valid && tx_header_fifo_ready) begin // Operation continues
+                if (rx_valid && ocp_ready) begin // Operation continues
                     case (optype) begin
-                        MRD3: begin next[IDLE]  = 1'b1; end // Mem read 3DW transaction complete
-                        MRD4: begin next[IDLE]  = 1'b1; end // Mem read 4DW transcation complete
                         MWR3: begin next[DATA3] = 1'b1; end // Mem write 3 DW, transmit data
                         MWR4: begin next[DATA4] = 1'b1; end // Mem write 4 DW, transmit data
                     endcase end
+                else if (rx_valid
                 else begin 
                     next[H2]    = 1'b1; end     // Not valid so stay
             end
@@ -114,16 +114,18 @@ module rx_fsm(
             // Data transmission/*{{{*/
             // Controls transmission of data on a 96 bit shift register
             state[DATA3]: begin
-                if (rx_valid && tx_header_fifo_ready && rx_last) begin
+                if (rx_valid && tx_header_fifo_ready && ocp_ready && rx_last) begin
                     next[IDLE]  = 1'b1; end     // Written last data, finish operation
-                else if (rx_valid && tx_header_fifo_ready && isdata) begin
-                    next[DATA3]  = 1'b1; end     // Still data left to transmit
+                else if (rx_valid && tx_header_fifo_ready && ocp_ready && ~rx_last) begin
+                    next[DATA3] = 1'b1; end     // Still data left to transmit
+                else
+                    next[HOLD]  = 1'b1; end     // Still not done and someone isn't ready
             end
             state[DATA4]: begin
                 if (rx_valid && rx_last) begin
                     next[IDLE]  = 1'b1; end     // Written last data, finish operation
                 else begin
-                    next[DATA]  = 1'b1; end     // Still data left to transmit
+                    next[DATA4] = 1'b1; end     // Still data left to transmit
             end
             //*}}}*/
 
