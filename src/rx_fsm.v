@@ -22,13 +22,19 @@ module rx_header_fsm(
     /*}}}*/
 
     // Tx AXI FIFO/*{{{*/
-    output wire tx_fifo_ 
+    output wire tx_header_fifo_valid,
+    input  wire tx_header_fifo_ready
+    /*}}}*/
     );
 
     // Declarations/*{{{*/
 
     // Parameters for parameterization of module
     parameter keep_width = 8;
+
+    // Control registers for flow of data through module
+    reg isdata; // Indicates that data is present in the TLP
+    reg is4;    // Indicates that 64 bit addressing is used so the header is 4DW, not 3DW
 
     // State encodings
     localparam IDLE = 2'b00;
@@ -37,11 +43,10 @@ module rx_header_fsm(
     localparam DATA = 2'b11;
     
     // Format encoding for PCI Express 2.0
-    localparam MRD    = 3'b000; // 3DW header, no data
-    localparam MRDLK  = 3'b001; // 4DW header, no data
-    localparam MWR    = 3'b010; // 3DW header, with data
-    localparam MWR2   = 3'b011; // 4DW header, with data
-    localparam PRFX   = 3'b100; // TLP Prefix
+    localparam MRD3 = 3'b000; // 3DW header, no data
+    localparam MRD4 = 3'b001; // 4DW header, no data
+    localparam MWR3 = 3'b010; // 3DW header, with data
+    localparam MWR4 = 3'b011; // 4DW header, with data
 
     // State Registers
     reg [3:0] state;
@@ -69,21 +74,25 @@ module rx_header_fsm(
 
         case (1'b1)
             state[IDLE]: begin
-                if (rx_header_valid)    next[H1]    <= 1'b1;    // TLP ready to be received from AXI-4 Stream bus
-                else                    next[IDLE]  <= 1'b1;    // Not valid so stay
+                if (rx_header_valid && tx_header_fifo_ready) begin
+                    next[H1]    = 1'b1; end   // TLP ready to be received from AXI-4 Stream bus
+                else begin
+                    next[IDLE]  = 1'b1; end   // Not valid so stay
             end
 
             state[H1]: begin
-                if (rx_header_valid)    next[H2]    <= 1'b1;    // Calculate the request type
-                else                    next[H1]    <= 1'b1;    // Not valid so stay
+                if (rx_header_valid && tx_head_fifo_ready) begin
+                    next[H2]    = 1'b1; end   // Calculate the request type
+                else begin 
+                    next[H1]    = 1'b1; end   // Not valid so stay
             end
 
             state[H2]: begin
                 if (rx_header_valid && isdata)
-                                        next[DATA]  <= 1'b1;    // Header complete and data present (write op)
+                                        next[DATA]  = 1'b1;    // Header complete and data present (write op)
                 else if(rx_header_valid && ~isdata)
-                                        next[IDLE]  <= 1'b1;    // Header complete and no data (read op)
-                else                    next[H2]    <= 1'b1;    // Not valid so stay
+                                        next[IDLE]  = 1'b1;    // Header complete and no data (read op)
+                else                    next[H2]    = 1'b1;    // Not valid so stay
             end
 
             state[DATA]: begin
