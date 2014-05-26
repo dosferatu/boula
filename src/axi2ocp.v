@@ -6,7 +6,7 @@
  * OCP transaction request.
  */
 
-// OCP 2.2 interface/*{{{*/
+// OCP 2.2 Interface Definitions /*{{{*/
 
 // Basic group
 `define addr_wdth 64
@@ -144,12 +144,12 @@ reg [9:0] tlp_data_length;
 // State transition logic/*{{{*/
 always @(posedge clk) begin
   if (reset) begin
-    state <= 4'b0;
-    state[IDLE] <= 1'b1;
+    state <= 4'b0;              // Reset state value to zero
+    state[IDLE] <= 1'b1;        // Set to IDLE state
   end
 
   else begin
-    state <= next;
+    state <= next;              // Transition to next state
   end
 end
 /*}}}*/
@@ -161,35 +161,38 @@ always @(state) begin
   case (1'b1)
     state[IDLE]: begin
       if (m_axis_tvalid) begin
-        next[REQUEST] <= 1'b1;   // Data is in the AXI FIFO for us
-      end
-      
+        next[REQUEST] <= 1'b1;   // TLP ready to be received from AXI-4 Stream bus
+      end 
       else begin
         next[IDLE] <= 1'b1;
       end
-      end
+    end
 
     state[REQUEST]: begin
-      next[PROC] <= 1'b1;     // Calculate the request type
+      if (m_axis_tvalid) begin
+      next[PROC] <= 1'b1;       // Calculate the request type
+      else begin
+        next[REQUEST] <= 1'b1;
+      end
     end
 
     state[PROC]: begin
-      if (header_counter == tlp_header_length) begin
-        next[PROC] <= 1'b1;   // Header slices left to process
+      if (m_axis_tvalid && (header_counter == tlp_header_length)) begin
+        next[EXEC] <= 1'b1;     // Ready to present the request to OCP
+      end
+      else begin
+        next[PROC] <= 1'b1;     // Either still have header left or not valid
       end
 
-      else begin
-        next[EXEC] <= 1'b1;   // Ready to present the request to the OCP bus
-      end
     end
 
     state[EXEC]: begin
-      if (m_axis_tlast | (data_counter == tlp_data_length)) begin
-        next[IDLE] <= 1'b1;   // We've either written the last data, or requested the last read
+      if (m_axis_tvalid && (m_axis_tlast | (data_counter == tlp_data_length))) begin
+        next[IDLE] <= 1'b1;     // We've either written the last data, or requested the last read
       end
 
       else begin
-        next[EXEC] <= 1'b1;   // Still data left in the FIFO for us to gather
+        next[EXEC] <= 1'b1;     // Still data left in the FIFO for us to gather
       end
     end
 
@@ -245,8 +248,8 @@ always @(posedge clk) begin
       // IDLE/*{{{*/
       next[IDLE]: begin
         // AXI FIFO input
-        m_aclk              <= 1'b0;
-        m_axis_tready <= 1'b1;  // Notify the AXI FIFO we are ready for more data
+        m_aclk          <= 1'b0;
+        m_axis_tready   <= 1'b1;  // Ready to receive on the AXI-4 Stream Bus
 
         // OCP 2.2 Interface/*{{{*/
 
