@@ -45,13 +45,6 @@ module rx_fsm(
     localparam DATA4    = 3'b100;
     localparam HOLD     = 3'b101;
    
-    // Format encoding for PCI Express 2.0
-    localparam MRD3     = 2'b00; // 3DW header, no data
-    localparam MRD4     = 2'b01; // 3DW header, no data
-    localparam MWR3     = 2'b10; // 3DW header, with data
-    localparam MWR4     = 2'b11; // 4DW header, with data
-
-
     // State Registers
     reg [3:0] state;
     reg [3:0] next;
@@ -78,10 +71,10 @@ module rx_fsm(
             //  System Idles while waiting for valid TLP to be presented
             //  Stays until rx_valid and tx_header_fifo_ready asserted
             state[IDLE]: begin
-                if (rx_valid && tx_header_fifo_ready) begin
-                    next[H1]    = 1'b1; end     // TLP ready to receive
-                else begin
-                    next[IDLE]  = 1'b1; end     // Not valid so stay
+                if (rx_valid && tx_header_fifo_ready) begin // TLP ready to receive
+                    next[H1]    = 1'b1; end     
+                else begin                                  // Not valid so stay
+                    next[IDLE]  = 1'b1; end     
             end
             /*}}}*/
 
@@ -90,47 +83,51 @@ module rx_fsm(
             //  Stays unless PCIe Core holds valid high and tx header fifo is
             //  ready
             state[H1]: begin
-                if (rx_valid && tx_header_fifo_ready) begin
-                    next[H2]    = 1'b1; end     // Received first slice, move to second
-                else begin 
-                    next[H1]    = 1'b1; end     // Not valid so stay
+                if (rx_valid && tx_header_fifo_ready) begin // Received first slice, move to second
+                    next[H2]    = 1'b1; end     
+                else begin                                  // Not valid so stay
+                    next[H1]    = 1'b1; end    
             end
             /*}}}*/
 
             // H2/*{{{*/
             // Second header slice transmitted
             state[H2]: begin
-                if (rx_valid && ocp_ready) begin // Operation continues
-                    case (optype) begin
-                        MWR3: begin next[DATA3] = 1'b1; end // Mem write 3 DW, transmit data
-                        MWR4: begin next[DATA4] = 1'b1; end // Mem write 4 DW, transmit data
-                    endcase end
-                else if (rx_valid
-                else begin 
-                    next[H2]    = 1'b1; end     // Not valid so stay
+                if (rx_valid && ocp_ready && optype[1]) begin
+                    if (optype[0] == 0) begin               // Mem write 3 DW, transmit data
+                        next[DATA3] = 1'b1; end
+                    else begin                              // Mem write 4 DW, transmit data
+                        next[DATA4] = 1'b1; end
+                end
+                else if (rx_valid && rx_last) begin         // Read op, only header
+                    next[IDLE]  = 1'b1; end   
+                else begin                                  // Not valid so stay
+                    next[H2]    = 1'b1; end    
             end
             /*}}}*/
 
             // Data transmission/*{{{*/
             // Controls transmission of data on a 96 bit shift register
             state[DATA3]: begin
-                if (rx_valid && tx_header_fifo_ready && ocp_ready && rx_last) begin
-                    next[IDLE]  = 1'b1; end     // Written last data, finish operation
-                else if (rx_valid && tx_header_fifo_ready && ocp_ready && ~rx_last) begin
-                    next[DATA3] = 1'b1; end     // Still data left to transmit
-                else
-                    next[HOLD]  = 1'b1; end     // Still not done and someone isn't ready
+                if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
+                    next[IDLE]  = 1'b1; end   
+                else if (rx_valid && ocp_ready && ~rx_last) begin   // Still data left to transmit and ok to transmit
+                    next[DATA3] = 1'b1; end   
+                else begin                                  // Still not done and something isn't ready
+                    next[HOLD]  = 1'b1; end   
             end
             state[DATA4]: begin
-                if (rx_valid && rx_last) begin
-                    next[IDLE]  = 1'b1; end     // Written last data, finish operation
-                else begin
-                    next[DATA4] = 1'b1; end     // Still data left to transmit
+                if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
+                    next[IDLE]  = 1'b1; end   
+                else if (rx_valid && ocp_ready && ~rx_last) begin  // Still data left to transmit and ok to transmit
+                    next[DATA4] = 1'b1; end   
+                else begin                                  // Still not done and something isn't ready
+                    next[HOLD]  = 1'b1; end   
             end
             //*}}}*/
 
             default: begin 
-                    next[IDLE]  = 1'b1; end     // If nothing matches return to default
+                    next[IDLE]  = 1'b1; end                 // If nothing matches return to default
         endcase
     end
     /*}}}*/
@@ -138,6 +135,69 @@ module rx_fsm(
     // Output logic/*{{{*/
     always @(posedge rx_clk) begin
         case (1'b1)
+            // IDLE/*{{{*/
+            //  System Idles while waiting for valid TLP to be presented
+            //  All outputs should be set to default
+            state[IDLE]: begin
+                if (rx_valid && tx_header_fifo_ready) begin // TLP ready to receive
+                    end     
+                else begin                                  // Not valid so stay
+                    next[IDLE]  = 1'b1; end     
+            end
+            /*}}}*/
+
+            // H1/*{{{*/
+            //  First header slice transmitted
+            //  Stays unless PCIe Core holds valid high and tx header fifo is
+            //  ready
+            state[H1]: begin
+                if (rx_valid && tx_header_fifo_ready) begin // Received first slice, move to second
+                    next[H2]    = 1'b1; end     
+                else begin                                  // Not valid so stay
+                    next[H1]    = 1'b1; end    
+            end
+            /*}}}*/
+
+            // H2/*{{{*/
+            // Second header slice transmitted
+            state[H2]: begin
+                if (rx_valid && ocp_ready && optype[1]) begin
+                    if (optype[0] == 0) begin               // Mem write 3 DW, transmit data
+                        next[DATA3] = 1'b1; end
+                    else begin                              // Mem write 4 DW, transmit data
+                        next[DATA4] = 1'b1; end
+                end
+                else if (rx_valid && rx_last) begin         // Read op, only header
+                    next[IDLE]  = 1'b1; end   
+                else begin                                  // Not valid so stay
+                    next[H2]    = 1'b1; end    
+            end
+            /*}}}*/
+
+            // Data transmission/*{{{*/
+            // Controls transmission of data on a 96 bit shift register
+            state[DATA3]: begin
+                if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
+                    next[IDLE]  = 1'b1; end   
+                else if (rx_valid && ocp_ready && ~rx_last) begin   // Still data left to transmit and ok to transmit
+                    next[DATA3] = 1'b1; end   
+                else begin                                  // Still not done and something isn't ready
+                    next[HOLD]  = 1'b1; end   
+            end
+            state[DATA4]: begin
+                if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
+                    next[IDLE]  = 1'b1; end   
+                else if (rx_valid && ocp_ready && ~rx_last) begin  // Still data left to transmit and ok to transmit
+                    next[DATA4] = 1'b1; end   
+                else begin                                  // Still not done and something isn't ready
+                    next[HOLD]  = 1'b1; end   
+            end
+            //*}}}*/
+
+            default: begin 
+                    next[IDLE]  = 1'b1; end                 // If nothing matches return to default
+        endcase
+case (1'b1)
             // IDLE/*{{{*/
             //  Then it asserts rx_ready for transmission to begin
             next[IDLE]: begin
