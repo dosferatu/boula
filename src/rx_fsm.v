@@ -30,6 +30,7 @@ module rx_fsm(
     input wire ocp_ready;           // Indicates that the OCP interface is ready for transmission of data
     input wire optype;              // Indicates that the header will be 4DW, not 3DW and if data is present or not
     output reg [2:0] ocp_reg_ctl;   // Controls the inputs to the OCP registers for translation and data
+    /*}}}*/
     );
 
     // Declarations/*{{{*/
@@ -139,28 +140,36 @@ module rx_fsm(
             //  System Idles while waiting for valid TLP to be presented
             //  All outputs should be set to default
             state[IDLE]: begin
-                if (rx_valid && tx_header_fifo_ready) begin // TLP ready to receive
-                    end     
-                else begin                                  // Not valid so stay
-                    next[IDLE]  = 1'b1; end     
+                rx_ready = 1'b0;
+                tx_header_fifo_valid = 1'b0;
+                ocp_reg_ctl = IDLE;
             end
             /*}}}*/
 
             // H1/*{{{*/
             //  First header slice transmitted
-            //  Stays unless PCIe Core holds valid high and tx header fifo is
-            //  ready
             state[H1]: begin
-                if (rx_valid && tx_header_fifo_ready) begin // Received first slice, move to second
-                    next[H2]    = 1'b1; end     
-                else begin                                  // Not valid so stay
-                    next[H1]    = 1'b1; end    
+                if (rx_valid && tx_header_fifo_ready) begin         // Receiving first slice
+                    rx_ready                <= 1'b1;
+                    tx_header_fifo_valid    <= 1'b1;
+                    ocp_reg_ctl             <= H1;
+                end
+                else if (rx_valid && ~tx_header_fifo_ready) begin   // Not ready to receive due to tx_header FIFO
+                    rx_ready                <= 1'b0;    // Not ready to receive
+                    tx_header_fifo_valid    <= 1'b1;    // Valid data being presented to tx fifo
+                    ocp_reg_ctl             <= H1;      // Stay on H1
+                end
+                else begin                                          // Valid data not being presented
+                    rx_ready                <= 1'b0;
+                    tx_header_fifo_valid    <= 1'b0;
+                    ocp_reg_ctl             <= IDLE;    
             end
             /*}}}*/
 
             // H2/*{{{*/
-            // Second header slice transmitted
+            // Second header slice transmitting
             state[H2]: begin
+                rx_read
                 if (rx_valid && ocp_ready && optype[1]) begin
                     if (optype[0] == 0) begin               // Mem write 3 DW, transmit data
                         next[DATA3] = 1'b1; end
