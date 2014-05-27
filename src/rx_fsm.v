@@ -30,8 +30,8 @@ module rx_fsm(
     input wire ocp_ready;           // Indicates that the OCP interface is ready for transmission of data
     input wire optype;              // Indicates that the header will be 4DW, not 3DW and if data is present or not
     output reg [2:0] ocp_reg_ctl;   // Controls the inputs to the OCP registers for translation and data
-    /*}}}*/
     );
+    /*}}}*/
 
     // Declarations/*{{{*/
 
@@ -44,7 +44,6 @@ module rx_fsm(
     localparam H2       = 3'b010;
     localparam DATA3    = 3'b011;
     localparam DATA4    = 3'b100;
-    localparam HOLD     = 3'b101;
    
     // State Registers
     reg [3:0] state;
@@ -94,13 +93,13 @@ module rx_fsm(
             // H2/*{{{*/
             // Second header slice transmitted
             state[H2]: begin
-                if (rx_valid && ocp_ready && optype[1]) begin
+                if (rx_valid && tx_header_fifo_ready && optype[1]) begin
                     if (optype[0] == 0) begin               // Mem write 3 DW, transmit data
                         next[DATA3] = 1'b1; end
                     else begin                              // Mem write 4 DW, transmit data
                         next[DATA4] = 1'b1; end
                 end
-                else if (rx_valid && rx_last) begin         // Read op, only header
+                else if (rx_valid && tx_header_fifo_ready && rx_last) begin // Read op, only header
                     next[IDLE]  = 1'b1; end   
                 else begin                                  // Not valid so stay
                     next[H2]    = 1'b1; end    
@@ -112,19 +111,14 @@ module rx_fsm(
             state[DATA3]: begin
                 if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
                     next[IDLE]  = 1'b1; end   
-                else if (rx_valid && ocp_ready && ~rx_last) begin   // Still data left to transmit and ok to transmit
+                else begin                                  // Still data left to transmit or not valid, so stay
                     next[DATA3] = 1'b1; end   
-                else begin                                  // Still not done and something isn't ready
-                    next[HOLD]  = 1'b1; end   
-            end
+            
             state[DATA4]: begin
                 if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
                     next[IDLE]  = 1'b1; end   
-                else if (rx_valid && ocp_ready && ~rx_last) begin  // Still data left to transmit and ok to transmit
+                else begin                                  // Still data left to transmit or not valid, so stay
                     next[DATA4] = 1'b1; end   
-                else begin                                  // Still not done and something isn't ready
-                    next[HOLD]  = 1'b1; end   
-            end
             //*}}}*/
 
             default: begin 
@@ -150,48 +144,55 @@ module rx_fsm(
             //  First header slice transmitted
             state[H1]: begin
                 if (rx_valid && tx_header_fifo_ready) begin         // Receiving first slice
-                    rx_ready                <= 1'b1;
-                    tx_header_fifo_valid    <= 1'b1;
-                    ocp_reg_ctl             <= H1;
+                    rx_ready                <= 1'b1;                //  Ready to receive
+                    tx_header_fifo_valid    <= 1'b1;                //  Valid data being presented to tx fifo
+                    ocp_reg_ctl             <= H1;                  //  Slice goes into H1 OCP register
                 end
                 else if (rx_valid && ~tx_header_fifo_ready) begin   // Not ready to receive due to tx_header FIFO
-                    rx_ready                <= 1'b0;    // Not ready to receive
-                    tx_header_fifo_valid    <= 1'b1;    // Valid data being presented to tx fifo
-                    ocp_reg_ctl             <= H1;      // Stay on H1
+                    rx_ready                <= 1'b0;                //  Not ready to receive
+                    tx_header_fifo_valid    <= 1'b1;                //  Valid data being presented to tx fifo
+                    ocp_reg_ctl             <= H1;                  //  Stay on H1
                 end
                 else begin                                          // Valid data not being presented
-                    rx_ready                <= 1'b0;
-                    tx_header_fifo_valid    <= 1'b0;
-                    ocp_reg_ctl             <= IDLE;    
+                    rx_ready                <= 1'b0;                //  Not ready to receive due to no valid data
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    ocp_reg_ctl             <= H1;                  //  Stay on H1
             end
             /*}}}*/
 
             // H2/*{{{*/
             // Second header slice transmitting
             state[H2]: begin
-                rx_read
-                if (rx_valid && ocp_ready && optype[1]) begin
-                    if (optype[0] == 0) begin               // Mem write 3 DW, transmit data
-                        next[DATA3] = 1'b1; end
-                    else begin                              // Mem write 4 DW, transmit data
-                        next[DATA4] = 1'b1; end
+                if (rx_valid && tx_header_fifo_ready) begin         // Receiving second slice
+                    rx_ready                <= 1'b1;                //  Ready to receive
+                    tx_header_fifo_valid    <= 1'b1;                //  Valid data being presented to tx fifo
+                    ocp_reg_ctl             <= H2;                  //  Slice goes into H2 OCP register
                 end
-                else if (rx_valid && rx_last) begin         // Read op, only header
-                    next[IDLE]  = 1'b1; end   
-                else begin                                  // Not valid so stay
-                    next[H2]    = 1'b1; end    
+                else if (rx_valid && ~tx_header_fifo_ready) begin   // Not ready to receive due to tx_header FIFO
+                    rx_ready                <= 1'b0;                //  Not ready to receive
+                    tx_header_fifo_valid    <= 1'b1;                //  Valid data being presented to tx fifo
+                    ocp_reg_ctl             <= H2;                  //  Stay on H2
+                end
+                else begin                                          // Valid data not being presented
+                    rx_ready                <= 1'b0;                //  Not ready to receive due to no valid data
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    ocp_reg_ctl             <= H2;                  //  Stay on H2
             end
             /*}}}*/
 
             // Data transmission/*{{{*/
             // Controls transmission of data on a 96 bit shift register
             state[DATA3]: begin
-                if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
-                    next[IDLE]  = 1'b1; end   
-                else if (rx_valid && ocp_ready && ~rx_last) begin   // Still data left to transmit and ok to transmit
-                    next[DATA3] = 1'b1; end   
-                else begin                                  // Still not done and something isn't ready
-                    next[HOLD]  = 1'b1; end   
+                if (rx_valid && ocp_ready) begin                    // Writing data onto OCP lines
+                    rx_ready                <= 1'b1;                //  Ready to transmit data
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    ocp_reg_ctl             <= DATA3;               //  Stay on DATA3
+                end
+                else begin                                          // No data transmitting due to OCP or no valid data
+                    rx_ready                <= 1'b0;                //  Not ready to transmit
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    ocp_reg_ctl             <= DATA3;               //  Stay on DATA3
+                end
             end
             state[DATA4]: begin
                 if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
@@ -206,67 +207,6 @@ module rx_fsm(
             default: begin 
                     next[IDLE]  = 1'b1; end                 // If nothing matches return to default
         endcase
-case (1'b1)
-            // IDLE/*{{{*/
-            //  Then it asserts rx_ready for transmission to begin
-            next[IDLE]: begin
-                rx_ready         = 1'b0; // Core AXI Interface - Bridge not ready
-                tx_header_fifo_valid    = 1'b0; // Tx header FIFO - No data 
-                ocp_reg_ctl             = 3'b0; // OCP Register Control
-            end
-            /*}}}*/
+    end/*}}}*/
 
-            // First TLP Header Slice/*{{{*/
-            //  
-            next[H1]: begin
-                if (rx_valid && tx_header_fifo_ready) begin
-                    // AXI Inteface/*{{{*/
-                    rx_ready         = 1'b0;
-                    /*}}}*/
-
-                    // Tx Header FIFO/*{{{*/
-                    tx_header_fifo_valid    = 1'b0;
-                    /*}}}*/
-
-                    // OCP Register controls/*{{{*/
-                ocp_reg_ctl             = 3'b0;
-                /*}}}*/
-            end
-            /*}}}*/
-
-            // Second TLP Header Slice/*{{{*/
-            next[H2]: begin
-                // AXI Inteface/*{{{*/
-                rx_ready         = 1'b0;
-                /*}}}*/
-
-                // Tx Header FIFO/*{{{*/
-                tx_header_fifo_valid    = 1'b0;
-                /*}}}*/
-
-                // OCP Register controls/*{{{*/
-                ocp_reg_ctl             = 3'b0;
-                /*}}}*/
-            end
-            /*}}}*/
-
-            // Transmit data/*{{{*/
-            next[DATA]: begin
-                // AXI Inteface/*{{{*/
-                rx_ready         = 1'b0;
-                /*}}}*/
-
-                // Tx Header FIFO/*{{{*/
-                tx_header_fifo_valid    = 1'b0;
-                /*}}}*/
-
-                // OCP Register controls/*{{{*/
-                ocp_reg_ctl             = 3'b0;
-                /*}}}*/
-            end
-            /*}}}*/
-           endcase
-       end
-   end
-   /*}}}*/
-   endmodule
+endmodule
