@@ -9,6 +9,7 @@
  */
 
 module rx_fsm(
+    // Module Ports /*{{{*/
     // Command Signals /*{{{*/
     input wire rx_reset,
     /*}}}*/
@@ -21,16 +22,17 @@ module rx_fsm(
     output reg rx_ready,
     /*}}}*/
 
-    // Tx AXI FIFO/*{{{*/
-    output wire tx_header_fifo_valid,
-    input  wire tx_header_fifo_ready
+    // Tx Header AXI FIFO/*{{{*/
+    input wire tx_header_fifo_ready,
+    output reg tx_header_fifo_valid,
     /*}}}*/
 
     // OCP Registers/*{{{*/
-    input wire ocp_ready;           // Indicates that the OCP interface is ready for transmission of data
-    input wire optype;              // Indicates that the header will be 4DW, not 3DW and if data is present or not
-    output reg [2:0] ocp_reg_ctl;   // Controls the inputs to the OCP registers for translation and data
+    input wire ocp_ready,           // Indicates that the OCP interface is ready for transmission of data
+    input wire [1:0] optype,        // Indicates that the header will be 4DW, not 3DW and if data is present or not
+    output reg [2:0] ocp_reg_ctl    // Controls the inputs to the OCP registers for translation and data
     );
+    /*}}}*/
     /*}}}*/
 
     // Declarations/*{{{*/
