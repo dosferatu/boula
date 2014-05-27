@@ -194,13 +194,18 @@ module rx_fsm(
                     ocp_reg_ctl             <= DATA3;               //  Stay on DATA3
                 end
             end
+            
             state[DATA4]: begin
-                if (rx_valid && ocp_ready && rx_last) begin // Written last data, finish operation
-                    next[IDLE]  = 1'b1; end   
-                else if (rx_valid && ocp_ready && ~rx_last) begin  // Still data left to transmit and ok to transmit
-                    next[DATA4] = 1'b1; end   
-                else begin                                  // Still not done and something isn't ready
-                    next[HOLD]  = 1'b1; end   
+                if (rx_valid && ocp_ready) begin                    // Writing data onto OCP lines
+                    rx_ready                <= 1'b1;                //  Ready to transmit data
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    ocp_reg_ctl             <= DATA4;               //  Stay on DATA4
+                end
+                else begin                                          // No data transmitting due to OCP or no valid data
+                    rx_ready                <= 1'b0;                //  Not ready to transmit
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    ocp_reg_ctl             <= DATA4;               //  Stay on DATA4
+                end
             end
             //*}}}*/
 
