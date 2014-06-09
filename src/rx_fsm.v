@@ -33,7 +33,7 @@ module rx_fsm(
     output reg [2:0] ocp_reg_ctl    // Controls the inputs to the OCP registers for translation and data
     );
     /*}}}*/
-    /*}}}*/
+    /*}}}*/ 
 
     // Declarations/*{{{*/
 
@@ -182,7 +182,7 @@ module rx_fsm(
             end
             /*}}}*/
 
-            // Data transmission/*{{{*/
+            // Data t ransmission/*{{{*/
             // Controls transmission of data on a 96 bit shift register
             state[DATA3]: begin
                 if (rx_valid && ocp_ready) begin                    // Writing data onto OCP lines
@@ -210,10 +210,10 @@ module rx_fsm(
                 end
             end
             //*}}}*/
-
+        // Default/*{{{*/
             default: begin 
                     next[IDLE]  = 1'b1; end                 // If nothing matches return to default
         endcase
-    end/*}}}*/
+    end/*}}}*//*}}}*/
 
 endmodule
