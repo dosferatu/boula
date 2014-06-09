@@ -182,17 +182,17 @@ module rx_fsm(
             end
             /*}}}*/
 
-            // Data t ransmission/*{{{*/
+            // Data transmission/*{{{*/
             // Controls transmission of data on a 96 bit shift register
             state[DATA3]: begin
                 if (rx_valid && ocp_ready) begin                    // Writing data onto OCP lines
                     rx_ready                <= 1'b1;                //  Ready to transmit data
-                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting header to tx fifo
                     ocp_reg_ctl             <= DATA3;               //  Stay on DATA3
                 end
                 else begin                                          // No data transmitting due to OCP or no valid data
                     rx_ready                <= 1'b0;                //  Not ready to transmit
-                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting header to tx fifo
                     ocp_reg_ctl             <= DATA3;               //  Stay on DATA3
                 end
             end
@@ -200,12 +200,12 @@ module rx_fsm(
             state[DATA4]: begin
                 if (rx_valid && ocp_ready) begin                    // Writing data onto OCP lines
                     rx_ready                <= 1'b1;                //  Ready to transmit data
-                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting header to tx fifo
                     ocp_reg_ctl             <= DATA4;               //  Stay on DATA4
                 end
                 else begin                                          // No data transmitting due to OCP or no valid data
                     rx_ready                <= 1'b0;                //  Not ready to transmit
-                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting header to tx fifo
                     ocp_reg_ctl             <= DATA4;               //  Stay on DATA4
                 end
             end

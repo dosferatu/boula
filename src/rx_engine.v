@@ -3,7 +3,7 @@
 //  bit shift register in accordance with the controls from the rx_fsm.
 
 // Definitions
-`define addr_width
+`define 
 
 module rx_engine(
     // Module Ports /*{{{*/
@@ -29,22 +29,28 @@ module rx_engine(
     /*}}}*/
 
     // OCP 2.2 Interface/*{{{*/
-    output reg [`addr_wdth - 1:0]   address,
-    output reg                      enable,
-    output reg [2:0]                burst_seq,
-    output reg                      burst_single_req,
-    output reg [9:0]                burst_length,
-    output reg                      data_valid,
-    output reg                      read_request,
-    output reg [axi_width - 1:0]    write_data,
-    output reg                      write_request,
-    output reg                      writeresp_enable
+    output wire [`addr_wdth - 1:0]   address,
+    output wire                      enable,
+    output wire [2:0]                burst_seq,
+    output wire                      burst_single_req,
+    output wire [9:0]                burst_length,
+    output wire                      data_valid,
+    output wire                      read_request,
+    output wire [axi_width - 1:0]    write_data,
+    output wire                      write_request,
+    output wire                      writeresp_enable
     /*}}}*/
 
     );
     /*}}}*/
 
     // Declarations /*{{{*/
+    
+    // Parameters for parameterization of the module
+    parameter axi_width     = 64;
+    parameter ocp_addr_size = 32;
+    parameter keep_width    = 8;
+
 
     // OCP register control encodings
     localparam IDLE     = 3'b000;
@@ -65,15 +71,14 @@ module rx_engine(
     localparam BLCK  = 3'b111;   // 2-dimensional Block
 
 
-    // Parameters for parameterization of the module
-    parameter axi_width     = 64;
-    parameter ocp_addr_size = 32;
-    parameter keep_width    = 8;
+     // OCP Registers for holding TLP Header
+    wire [2:0] ocp_reg_ctl;                         // For contolling of data flow into the registers
+    reg [axi_width - 1:0]   header1;                // Holds the first slice of the header
+    reg [axi_width - 1:0]   header2;                // Holds the second slice of the header
+    reg [96 - 1:0]          data_shift_register;    // Shifts data in and out for transmission onto OCP
 
-    // OCP Registers for holding TLP Header
-    reg [axi_width - 1:0]   header1;
-    reg [axi_width - 1:0]   header2;
-    reg [96 - 1:0]          data_shift_register;
+    // Others
+    wire [1:0] optype;
     /*}}}*/
 
     // Instantiation of rx_fsm for controlling flow of TLP /*{{{*/
@@ -86,11 +91,9 @@ module rx_engine(
         enable              <=  1'b1;
         burst_seq           <=  
         burst_single_req    <=  
-        burst_length        <=  
+        burst_length        <= header1 [9:0]; 
         data_valid          <=  
-        read_request        <=  
-        write_data          <=  
-        write_request       <=  
+        write_data          <= data_shft_register [64 - 1:0]; 
         writeresp_enable    <=  
     end
 
@@ -126,7 +129,7 @@ module rx_engine(
                 end
                 else begin
                     data_shift_register [31:0]  <= data_shift_register [31:0];   // Keep current data
-                    data_shift_register [95:32] <= data_shift_register [95:32]; // Keep current data
+                    data_shift_register [95:32] <= data_shift_register [95:32];  // Keep current data
                 end
 
             end
