@@ -39,10 +39,10 @@ module rx_engine(
     output wire [axi_width - 1:0]    write_data,
     output wire                      write_request,
     output wire                      writeresp_enable
-    /*}}}*/
+    /*}}}*/ 
 
     );
-    /*}}}*/
+    /*}}}*/ 
 
     // Declarations /*{{{*/
     
@@ -82,7 +82,9 @@ module rx_engine(
     /*}}}*/
 
     // Instantiation of rx_fsm for controlling flow of TLP /*{{{*/
-    rx_fsm rx_control(rx_reset, rx_clk, rx_valid, rx_keep, rx_last, rx_ready, tx_header_fifo_ready, tx_header_fifo_valid, ocp_ready, optype, ocp_reg_ctl);
+    rx_fsm rx_control(rx_reset, rx_clk, rx_valid, rx_keep, rx_last,
+                      rx_ready, tx_header_fifo_ready, tx_header_fifo_valid,
+                      ocp_ready, optype, ocp_reg_ctl, read_request, write_request);
     /*}}}*/
 
     // OCP Translation logic /*{{{*/
