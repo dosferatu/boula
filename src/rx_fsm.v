@@ -28,12 +28,18 @@ module rx_fsm(
     /*}}}*/
 
     // OCP Registers/*{{{*/
-    input wire ocp_ready,           // Indicates that the OCP interface is ready for transmission of data
     input wire [1:0] optype,        // Indicates that the header will be 4DW, not 3DW and if data is present or not
-    output reg [2:0] ocp_reg_ctl    // Controls the inputs to the OCP registers for translation and data
+    output reg [2:0] ocp_reg_ctl,   // Controls the inputs to the OCP registers for translation and data
+
+    // OCP Controller/*{{{*/
+    input wire ocp_ready,           // Indicates that the OCP interface is ready for transmission of data
+    output reg ocp_valid,           // Indicates to the OCP interface that a transaction is ready
+    output reg ocp_readreq,         // Indicates to the OCP interface that a read request is being made
+    output reg ocp_writereq         // Indicates to the OCP interface that a write request is being made
+    /*}}}*/
     );
     /*}}}*/
-    /*}}}*/
+    /*}}}*/ 
 
     // Declarations/*{{{*/
 
@@ -51,7 +57,6 @@ module rx_fsm(
     reg [3:0] state;
     reg [3:0] next;
     /*}}}*/
-
 
     // Begin FSM Blocks/*{{{*/
     // State transition logic/*{{{*/
@@ -135,10 +140,13 @@ module rx_fsm(
             // IDLE/*{{{*/
             //  System Idles while waiting for valid TLP to be presented
             //  All outputs should be set to default
-            state[IDLE]: begin
-                rx_ready = 1'b0;
-                tx_header_fifo_valid = 1'b0;
-                ocp_reg_ctl = IDLE;
+            state[IDLE]: begin                                      // IDLE - Waiting for TLP
+                rx_ready                    <= 1'b0;                //  Rx waiting
+                tx_header_fifo_valid        <= 1'b0;                //  Nothing being presented to tx header fifo
+                ocp_reg_ctl                 <= IDLE;                //  OCP registers do nothing
+                ocp_valid                   <= 1'b0;                //  Nothing being presented to OCP interface
+                ocp_readreq                 <= 1'b0;                //  No read request being made to OCP
+                ocp_writereq                <= 1'b0;                //  No write request being made to OCP
             end
             /*}}}*/
 
@@ -149,17 +157,26 @@ module rx_fsm(
                     rx_ready                <= 1'b1;                //  Ready to receive
                     tx_header_fifo_valid    <= 1'b1;                //  Valid data being presented to tx fifo
                     ocp_reg_ctl             <= H1;                  //  Slice goes into H1 OCP register
+                    ocp_valid               <= 1'b0;                //  Nothing being presented to OCP interface
+                    ocp_readreq             <= 1'b0;                //  No read request being made to OCP
+                    ocp_writereq            <= 1'b0;                //  No write request being made to OCP
                 end
                 else if (rx_valid && ~tx_header_fifo_ready) begin   // Not ready to receive due to tx_header FIFO
                     rx_ready                <= 1'b0;                //  Not ready to receive
                     tx_header_fifo_valid    <= 1'b1;                //  Valid data being presented to tx fifo
                     ocp_reg_ctl             <= H1;                  //  Stay on H1
-                end
+                    ocp_valid               <= 1'b0;                //  Nothing being presented to OCP interface
+                    ocp_readreq             <= 1'b0;                //  No read request being made to OCP
+                    ocp_writereq            <= 1'b0;                //  No write request being made to OCP
+                 end
                 else begin                                          // Valid data not being presented
                     rx_ready                <= 1'b0;                //  Not ready to receive due to no valid data
                     tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
                     ocp_reg_ctl             <= H1;                  //  Stay on H1
-            end
+                    ocp_valid               <= 1'b0;                //  Nothing being presented to OCP interface
+                    ocp_readreq             <= 1'b0;                //  No read request being made to OCP
+                    ocp_writereq            <= 1'b0;                //  No write request being made to OCP
+                end
             /*}}}*/
 
             // H2/*{{{*/
@@ -169,16 +186,25 @@ module rx_fsm(
                     rx_ready                <= 1'b1;                //  Ready to receive
                     tx_header_fifo_valid    <= 1'b1;                //  Valid data being presented to tx fifo
                     ocp_reg_ctl             <= H2;                  //  Slice goes into H2 OCP register
+                    ocp_valid               <= 1'b0;                //  Nothing being presented to OCP interface
+                    ocp_readreq             <= 1'b0;                //  No read request being made to OCP
+                    ocp_writereq            <= 1'b0;                //  No write request being made to OCP
                 end
                 else if (rx_valid && ~tx_header_fifo_ready) begin   // Not ready to receive due to tx_header FIFO
                     rx_ready                <= 1'b0;                //  Not ready to receive
                     tx_header_fifo_valid    <= 1'b1;                //  Valid data being presented to tx fifo
                     ocp_reg_ctl             <= H2;                  //  Stay on H2
+                    ocp_valid               <= 1'b0;                //  Nothing being presented to OCP interface
+                    ocp_readreq             <= 1'b0;                //  No read request being made to OCP
+                    ocp_writereq            <= 1'b0;                //  No write request being made to OCP
                 end
                 else begin                                          // Valid data not being presented
                     rx_ready                <= 1'b0;                //  Not ready to receive due to no valid data
                     tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
                     ocp_reg_ctl             <= H2;                  //  Stay on H2
+                    ocp_valid               <= 1'b0;                //  Nothing being presented to OCP interface
+                    ocp_readreq             <= 1'b0;                //  No read request being made to OCP
+                    ocp_writereq            <= 1'b0;                //  No write request being made to OCP
             end
             /*}}}*/
 
@@ -187,33 +213,69 @@ module rx_fsm(
             state[DATA3]: begin
                 if (rx_valid && ocp_ready) begin                    // Writing data onto OCP lines
                     rx_ready                <= 1'b1;                //  Ready to transmit data
-                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting header to tx fifo
                     ocp_reg_ctl             <= DATA3;               //  Stay on DATA3
+                    ocp_valid               <= 1'b1;                //  Data being presented to OCP interface
+                    if (optype[1]) == 1'b0) begin
+                        ocp_readreq         <= 1'b1;                //  Read request being made to OCP
+                        ocp_writereq        <= 1'b0;
+                    end
+                    else begin 
+                        ocp_readreq         <= 1'b0;
+                        ocp_writereq        <= 1'b1;                //  Write request being made to OCP
+                    end
                 end
                 else begin                                          // No data transmitting due to OCP or no valid data
                     rx_ready                <= 1'b0;                //  Not ready to transmit
-                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting header to tx fifo
                     ocp_reg_ctl             <= DATA3;               //  Stay on DATA3
+                    ocp_valid               <= rx_valid;            //  Data only being presented if valid on AXI int.
+                    if (optype[1] == 1'b0) begin
+                        ocp_readreq         <= 1'b1;                //  Read request being made to OCP
+                        ocp_writereq        <= 1'b0;
+                    end
+                    else begin
+                        ocp_readreq         <= 1'b0;
+                        ocp_writereq        <= 1'b1;                //  Write request being made to OCP
+                    end
                 end
             end
             
             state[DATA4]: begin
                 if (rx_valid && ocp_ready) begin                    // Writing data onto OCP lines
                     rx_ready                <= 1'b1;                //  Ready to transmit data
-                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting header to tx fifo
                     ocp_reg_ctl             <= DATA4;               //  Stay on DATA4
+                    ocp_valid               <= 1'b1;                //  Data being presented to OCP interface
+                    if (optype[1] == 1'b0) begin
+                        ocp_readreq         <= 1'b1;                //  Read request being made to OCP
+                        ocp_writereq        <= 1'b0;
+                    end
+                    else begin
+                        ocp_readreq         <= 1'b0;
+                        ocp_writereq        <= 1'b1;                //  Write request being made to OCP
+                    end
                 end
                 else begin                                          // No data transmitting due to OCP or no valid data
                     rx_ready                <= 1'b0;                //  Not ready to transmit
-                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting valid data to tx fifo
+                    tx_header_fifo_valid    <= 1'b0;                //  Not presenting header to tx fifo
                     ocp_reg_ctl             <= DATA4;               //  Stay on DATA4
+                    ocp_valid               <= rx_valid;            //  Data begin presented only if valid on AXI int.
+                    if (optype[1] == 1'b0) begin
+                        ocp_readreq         <= 1'b1;                //  Read request being made to OCP
+                        ocp_writereq        <= 1'b0;
+                    end
+                    else begin
+                        ocp_readreq         <= 1'b0;
+                        ocp_writereq        <= 1'b1;                //  Write request being made to OCP
+                    end
                 end
             end
             //*}}}*/
-
+        // Default/*{{{*/
             default: begin 
-                    next[IDLE]  = 1'b1; end                 // If nothing matches return to default
+                    next[IDLE]  = 1'b1; end                         // If nothing matches return to default
         endcase
-    end/*}}}*/
+    end/*}}}*//*}}}*/
 
 endmodule
