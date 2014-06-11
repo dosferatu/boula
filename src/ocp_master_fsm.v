@@ -393,7 +393,7 @@ always @(posedge Clk) begin
     set_burst_seq <= burst_seq;
     //set_burst_single_req <=   // NOT IMPLEMENTED
     set_valid_bytes <= valid_bytes;
-    set writeresp_enable <= writeresp_enable;
+    set_writeresp_enable <= writeresp_enable;
 
 
     // OCP 2.2 Interface
@@ -479,7 +479,7 @@ always @(posedge Clk) begin
         set_burst_seq <= burst_seq;
         //set_burst_single_req <=   // NOT IMPLEMENTED
         set_valid_bytes <= valid_bytes;
-        set writeresp_enable <= writeresp_enable;
+        set_writeresp_enable <= writeresp_enable;
 
 
         // OCP 2.2 Interface
@@ -631,7 +631,6 @@ always @(posedge Clk) begin
         MDataRowLast      <= 1'bx;
         //MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
         MReqLast          <= (burst_count == (set_burst_length - 1'b1)) | set_burst_single_req;
-        r
         MReqRowLast       <= 1'bx;
 
         // Tag group
@@ -801,7 +800,7 @@ always @(posedge Clk) begin
         set_burst_seq <= burst_seq;
         //set_burst_single_req <=   // NOT IMPLEMENTED
         set_valid_bytes <= valid_bytes;
-        set writeresp_enable <= writeresp_enable;
+        set_writeresp_enable <= writeresp_enable;
 
         // OCP 2.2 Interface
 
