@@ -33,7 +33,7 @@
 `define sdatainfo_wdth 0
 
 // Burst group
-`define atomiclength_wdth 0
+`define atomiclength_wdth 10
 `define burstlength_wdth 10
 `define blockheight_wdth 10
 `define blockstride_wdth 10
@@ -56,6 +56,8 @@
 /*}}}*/
 
 `define fifo_wdth (`data_wdth * 8)
+`define request_length 10
+`define incr_addr_offset `data_wdth / 8   // Autoincrement address by bytes
 
 module ocp_master_fsm(
   // Bridge interface/*{{{*/
@@ -63,7 +65,7 @@ module ocp_master_fsm(
   input wire                            enable,
   input wire [2:0]                      burst_seq,
   input wire                            burst_single_req, // NOT IMPLEMENTED
-  input wire [9:0]                      burst_length,
+  input wire [`request_length - 1:0]    burst_length,
   input wire                            data_valid,
   input wire                            read_request,
   input wire                            reset,
@@ -72,6 +74,7 @@ module ocp_master_fsm(
   input wire [`data_wdth - 1:0]         write_data,   // Coming from PCIe side
   input wire                            write_request,
   input wire                            writeresp_enable, // NOT IMPLEMENTED
+  output wire                           ocp_ready,
 
   // AXI FIFO outputs
   output reg s_aclk,
@@ -224,12 +227,21 @@ localparam BLCK  = 3'b111;   // 2-dimensional Block
 //parameter SRESET_INACTIVE = 1'b1;
 /*}}}*/
 
-reg [3:0] state;
-reg [3:0] next;
+reg [3:0]                     state;
+reg [3:0]                     next;
 
-reg [9:0] burst_count;  // For incrementing (INCR) type burst sequences
+// Registers to capture the bridge request for a transaction
+reg [`request_length - 1:0]   burst_count;  // For incrementing (INCR) burst sequences
+reg [`addr_wdth - 1:0]        base_address;
+reg [`request_length - 1:0]   set_burst_length;
+reg [2:0]                     set_burst_seq;
+reg                           set_burst_single_req; // NOT IMPLEMENTED
+reg [`data_wdth - 1:0]        set_valid_bytes;
+reg                           set_writeresp_enable; // NOT IMPLEMENTED
+
 assign EnableClk = enable;
 assign Clk = sys_clk & enable;
+assign ocp_ready = SCmdAccept;
 /*}}}*/
 
 // State transition logic/*{{{*/
@@ -252,11 +264,11 @@ end
 /*}}}*/
 
 // Next state logic/*{{{*/
-always @(state or read_request or write_request or MReqLast or SCmdAccept or SResp or SData or s_axis_tready) begin
-//always @(*) begin
+//always @(state or read_request or write_request or MReqLast or SCmdAccept or SResp or SData or s_axis_tready) begin
+always @(*) begin
   next <= 3'b0;
 
-  // Handle slave response/*{{{*/
+  // Patch slave response to the Tx bridge/*{{{*/
   case (SResp)
     // No response
     NULL: begin
@@ -341,7 +353,7 @@ always @(state or read_request or write_request or MReqLast or SCmdAccept or SRe
       endcase
     end
 
-    // Wait for SCmdAccept to be set
+    // Transition to IDLE after the last request has been sent
     state[WR]: begin
       if (SCmdAccept & MReqLast) begin
         next[IDLE] <= 1'b1;
@@ -352,7 +364,7 @@ always @(state or read_request or write_request or MReqLast or SCmdAccept or SRe
       end
     end
 
-    // Wait for SCmdAccept to be set
+    // Transition to IDLE after the last request has been sent
     state[RD]: begin
       if (SCmdAccept & MReqLast) begin
         next[IDLE] <= 1'b1;
@@ -376,6 +388,13 @@ always @(posedge Clk) begin
   // Reset/*{{{*/
   if (reset) begin
     burst_count <= `burstlength_wdth'b0;
+    base_address <= {`addr_wdth{1'b0}};
+    set_burst_length <= burst_length;
+    set_burst_seq <= burst_seq;
+    //set_burst_single_req <=   // NOT IMPLEMENTED
+    set_valid_bytes <= valid_bytes;
+    set_writeresp_enable <= writeresp_enable;
+
 
     // OCP 2.2 Interface
 
@@ -453,6 +472,15 @@ always @(posedge Clk) begin
       // IDLE/*{{{*/
       next[IDLE]: begin
         burst_count <= `burstlength_wdth'b0;
+        base_address <= address;
+
+        // Capture the transaction request signals for the MCmd states
+        set_burst_length <= burst_length;
+        set_burst_seq <= burst_seq;
+        //set_burst_single_req <=   // NOT IMPLEMENTED
+        set_valid_bytes <= valid_bytes;
+        set_writeresp_enable <= writeresp_enable;
+
 
         // OCP 2.2 Interface
 
@@ -526,10 +554,55 @@ always @(posedge Clk) begin
       next[WR]: begin
         burst_count <= (SCmdAccept & (burst_count < burst_length)) ? burst_count + 1'b1 : burst_count;
 
+        // Handle addressing mode via specified burst mode/*{{{*/
+        if (SCmdAccept) begin
+          case (burst_seq)
+            INCR: begin
+              base_address <= base_address + (`incr_addr_offset);
+            end
+
+            DFLT1: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            WRAP: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            DFLT2: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            XOR: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            STRM: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            UNKN: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            BLCK: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            default: begin
+              base_address <= base_address;
+            end
+          endcase
+        end
+
+        else begin
+          base_address <= base_address;
+        end/*}}}*/
+
         // OCP 2.2 Interface
 
         // Basic group
-        MAddr             <= address;
+        MAddr             <= base_address;
         MCmd              <= WR;
         MData             <= write_data;
         MDataValid        <= 1'bx;
@@ -549,15 +622,15 @@ always @(posedge Clk) begin
         MBlockHeight      <= 1'b1;
         //MBlockHeight      <= (burst_seq == BLCK) ? <row_length> : 1'b1;
         MBlockStride      <= 1'b0;
-        MBurstLength      <= burst_length;
+        MBurstLength      <= set_burst_length;
         MBurstPrecise     <= 1'b1;
-        MBurstSeq         <= burst_seq;
+        MBurstSeq         <= set_burst_seq;
         //MBurstSingleSeq   <= burst_single_req;
         MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
         //MReqLast          <= (burst_count == (burst_length - 1'b1)) ? 1'b1 : 1'b0;
-        MReqLast          <= (burst_count == (burst_length - 1'b1)) | burst_single_req;
+        MReqLast          <= (burst_count == (set_burst_length - 1'b1)) | set_burst_single_req;
         MReqRowLast       <= 1'bx;
 
         // Tag group
@@ -602,10 +675,55 @@ always @(posedge Clk) begin
       next[RD]: begin
         burst_count <= (SCmdAccept & (burst_count < burst_length)) ? burst_count + 1'b1 : burst_count;
 
+        // Handle addressing mode via specified burst mode/*{{{*/
+        if (SCmdAccept) begin
+          case (burst_seq)
+            INCR: begin
+              base_address <= base_address + (`incr_addr_offset);
+            end
+
+            DFLT1: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            WRAP: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            DFLT2: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            XOR: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            STRM: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            UNKN: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            BLCK: begin
+              // BURST SEQUENCE NOT IMPLEMENTED IN CONTROLLER
+            end
+
+            default: begin
+              base_address <= base_address;
+            end
+          endcase
+        end
+
+        else begin
+          base_address <= base_address;
+        end/*}}}*/
+
         // OCP 2.2 Interface
 
         // Basic group
-        MAddr             <= address;
+        MAddr             <= base_address;
         MCmd              <= RD;
         MData             <= {`data_wdth{1'b0}};
         MDataValid        <= 1'bx;
@@ -615,8 +733,8 @@ always @(posedge Clk) begin
         // Simple group
         MAddrSpace        <= {`addrspace_wdth{1'b0}};
         //MByteEn           <= {`data_wdth{1'b1}};
-        MByteEn           <= valid_bytes;
-        MDataByteEn       <= write_request ? valid_bytes : {`data_wdth{1'b1}};
+        MByteEn           <= set_valid_bytes;
+        MDataByteEn       <= write_request ? set_valid_bytes : {`data_wdth{1'b1}};
         MDataInfo         <= 1'b0;
         MReqInfo          <= 1'b0;
 
@@ -626,14 +744,14 @@ always @(posedge Clk) begin
         //MBlockHeight      <= (burst_seq == BLCK) ? <row_length> : 1'b1;
         MBlockStride      <= 1'b0;
         //MBlockStride      <= (burst_sq == BLCK) ? <diff between rows> : 1'b0;
-        MBurstLength      <= burst_length;
+        MBurstLength      <= set_burst_length;
         MBurstPrecise     <= 1'b1;
-        MBurstSeq         <= burst_seq;
+        MBurstSeq         <= set_burst_seq;
         //MBurstSingleSeq   <= burst_single_req;
         MBurstSingleSeq   <= 1'b0;
         MDataLast         <= 1'bx;
         MDataRowLast      <= 1'bx;
-        MReqLast          <= (burst_count == (burst_length - 1'b1)) | burst_single_req;
+        MReqLast          <= (burst_count == (set_burst_length - 1'b1)) | set_burst_single_req;
         MReqRowLast       <= 1'bx;
 
         // Tag group
@@ -677,6 +795,12 @@ always @(posedge Clk) begin
       // DEFAULT CASE (RESET)/*{{{*/
       default: begin
         burst_count <= `burstlength_wdth'b0;
+        base_address <= {`addr_wdth{1'bx}};
+        set_burst_length <= burst_length;
+        set_burst_seq <= burst_seq;
+        //set_burst_single_req <=   // NOT IMPLEMENTED
+        set_valid_bytes <= valid_bytes;
+        set_writeresp_enable <= writeresp_enable;
 
         // OCP 2.2 Interface
 
