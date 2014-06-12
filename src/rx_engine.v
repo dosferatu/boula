@@ -9,6 +9,7 @@ module rx_engine(
     // Module Ports /*{{{*/
     // Command Signals /*{{{*/
     input wire                      rx_reset,
+    input wire                      rx_enable,
     /*}}}*/
 
     // PCIe Core AXI Interface /*{{{*/
@@ -29,6 +30,7 @@ module rx_engine(
     /*}}}*/
 
     // OCP 2.2 Interface/*{{{*/
+    input wire                       ocp_ready,
     output wire [`addr_wdth - 1:0]   address,
     output wire                      enable,
     output wire [2:0]                burst_seq,
@@ -79,10 +81,15 @@ module rx_engine(
 
     // Others
     wire [1:0] optype;
+    wire rx_vld_en;
     /*}}}*/
 
+    // Enabling the rx receiver
+    assign rx_vld_en = rx_valid & rx_enable;        // Enables receiving if valid data and control enabled
+
+    
     // Instantiation of rx_fsm for controlling flow of TLP /*{{{*/
-    rx_fsm rx_control(rx_reset, rx_clk, rx_valid, rx_keep, rx_last,
+    rx_fsm rx_control(rx_reset, rx_clk, rx_vld_en, rx_keep, rx_last,
                       rx_ready, tx_header_fifo_ready, tx_header_fifo_valid,
                       ocp_ready, optype, ocp_reg_ctl, read_request, write_request);
     /*}}}*/
