@@ -26,7 +26,7 @@
 `define data_wdth 8
 
 // Simple group
-`define addrspace_wdth 0
+`define addrspace_wdth 64
 `define mdatainfo_wdth 0
 `define reqinfo_wdth 0
 `define respinfo_wdth 0
